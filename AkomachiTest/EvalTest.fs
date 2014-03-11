@@ -55,5 +55,15 @@ type EvalTest() =
                 | (Value.Int 12) -> ()
                 | x -> Assert.Fail(sprintf "%A" x)
         | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
-      
       ()
+    [<TestMethod>]
+    member this.TestSelf() =
+      match (run Parser.prog "var obj = { fn -> fun (x, y, z) self.x, x->1 }; obj.fn(1,2,3);") with
+        | Success (r,us,p)   ->
+             match Stage.dance (Stage.World()) r with
+                | (Value.Int 1) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      ()
+
+
