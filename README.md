@@ -45,7 +45,7 @@ var res = if 1 == 1 then "t" else "f";
 res; // --> "t"
 
 // 複文を書く時はカッコで囲う
-var res = if 1 == 1 then {val x=1; x+1;} else "f";
+var res = if 1 == 1 then {var x=1; x+1;} else "f";
 res; // --> 2
 
 // 関数
