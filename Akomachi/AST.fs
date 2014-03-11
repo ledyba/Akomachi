@@ -15,6 +15,8 @@ type AST =
     | Index of AST * AST
     | Call of AST * AST list
 
+    | If of AST * AST * AST
+
     | Uni of string * AST
     | Binary of AST * string * AST
     | Assign of AST * AST

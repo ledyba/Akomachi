@@ -27,3 +27,13 @@ type EvalTest() =
         | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
       
       ()
+    [<TestMethod>]
+    member this.TestIf() =
+      match (run Parser.prog "var z = fun (x, y) x+y; if z(1,2) == 3 then 1 else 2") with
+        | Success (r,us,p)   ->
+             match Stage.dance (Stage.World()) r with
+                | (Value.Int 1) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      
+      ()

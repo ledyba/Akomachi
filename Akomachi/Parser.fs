@@ -115,9 +115,10 @@ module Parser =
         choice
             [(between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List);
              attempt (between (strws "{") (strws "}") (sepBy (ident .>> ws .>> strws "->" .>>. expr ) (strws ",")) |>> AST.Object);
+             (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun);
+             ((tuple3 ((strws "if") >>. expr .>> (strws "then")) expr ((strws "else") >>. expr) ) |>> AST.If);
              (block |>> AST.Block);
              expr1 ]
-    let expr3 = (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun) <|> expr2
-    let expr4 = ( (((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr3) |>> AST.Var) <|> expr3
-    do exprImpl := expr4
+    let expr3 = ( (((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr2) |>> AST.Var) <|> expr2
+    do exprImpl := expr3
     let prog = (ws >>. exprs .>> eof) |>> fun e -> AST.Fun ([], Block e)

@@ -11,9 +11,8 @@ module Stage =
         let stringP = new System.Collections.Generic.Dictionary<string, string -> Value list -> Value>()
         do
             globalObj.Add("global", Obj globalObj)
-            intP.Add("+", fun x nums ->
-                let nu = (List.map Val.val2int nums)
-                (Int (x + List.fold (+) 0 nu)))
+            intP.Add("+", fun x nums -> (Int (x + List.fold (+) 0 (List.map Val.val2int nums))))
+            intP.Add("==", fun x ((Int num) :: left) -> Bool (x = num))
         member self.Global = globalObj
         
         member internal self.intProvider = intP
@@ -96,12 +95,20 @@ module Stage =
                     | v ->
                         match (eval w selfStack stack v) with
                             | Value.Fun (env, arglist, fnast) ->
+                                if (List.length arglist <> List.length args ) then
+                                        raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
+                                    else ()
                                 let env = (inheritObj env)
                                 for (n,v) in List.zip arglist args do
                                     env.Add(n,v)
                                 eval w (Null :: selfStack) (env :: stack) fnast
                             | Value.NativeFunc fn -> (fn Null args)
                             | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
+            | AST.If (condAst, thenAst, elseAst) ->
+                match eval w selfStack stack condAst with
+                    | (Bool true) -> eval w selfStack stack thenAst
+                    | (Bool false) -> eval w selfStack stack elseAst
+                    | v -> raise (invalidOp (sprintf "%A" v))
             | AST.Uni (sym, valueAst) ->
                 let obj = eval w selfStack stack valueAst
                 let fn = get w obj sym
