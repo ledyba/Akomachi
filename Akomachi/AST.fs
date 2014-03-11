@@ -21,4 +21,3 @@ type AST =
 
     | Fun of string list * AST
     | Var of string * AST
-
