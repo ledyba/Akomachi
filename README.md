@@ -24,15 +24,21 @@ Very Simple .NET Language for embed
 ---------
 
 ```
+1; //int
+1.0; //float
+true; false; //bool
+"Hey!" // string (JSONと一緒)
+[1, 2, 3, "str"]; //list
+
+// オブジェクト記法
+var obj = {val1 -> 1, val2 -> true};
+obj.val2; // --> true
+
 // 演算子は中置記法
 1+2;
 
 // 変数は宣言が必要（初期化子は絶対必要）
 var x = 1;
-
-// オブジェクト記法
-var obj = {val1 -> 1, val2 -> true};
-obj.val2; // --> true
 
 // if式
 var res = if 1 == 1 then "t" else "f";
