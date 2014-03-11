@@ -17,19 +17,19 @@ type ParseTest() =
                 match r with
                     | Float x -> Assert.IsTrue(123.456 = x)
                     | _ -> Assert.Fail()
-            | Failure (msg,err,us) -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
         match (run Parser.numLiteral "123") with
             | Success (r,us,p)   -> 
                 match r with
-                    | Int x -> Assert.IsTrue((int64 123) = x)
+                    | Int x -> Assert.IsTrue(123 = x)
                     | _ -> Assert.Fail()
-            | Failure (msg,err,us) -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
         match (run Parser.numLiteral "0x123") with
             | Success (r,us,p)   -> 
                 match r with
-                    | Int x -> Assert.AreEqual((int64 0x123), x) |> ignore
+                    | Int x -> Assert.AreEqual(0x123, x) |> ignore
                     | _ -> Assert.Fail()
-            | Failure (msg,err,us) -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
     [<TestMethod>]
     member this.TestString() =
         match (run Parser.strLiteral "\"test\"") with
@@ -37,11 +37,33 @@ type ParseTest() =
                 match r with
                     | String x -> Assert.AreEqual(x, "test") |> ignore
                     | _ -> Assert.Fail()
-            | Failure (msg,err,us) -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
         match (run Parser.strLiteral "\"あいうえお\"") with
             | Success (r,us,p)   -> 
                 match r with
                     | String x -> Assert.AreEqual(x, "あいうえお") |> ignore
                     | _ -> Assert.Fail()
-            | Failure (msg,err,us) -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
 
+    [<TestMethod>]
+    member this.TestBool() =
+        match (run Parser.boolLiteral "true") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | Bool x -> Assert.AreEqual(x, true) |> ignore
+                    | _ -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
+        match (run Parser.boolLiteral "false") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | Bool x -> Assert.AreEqual(x, false) |> ignore
+                    | _ -> Assert.Fail()
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
+    [<TestMethod>]
+    member this.TestAST() =
+        match (run Parser.expr "( 1 + 1    )") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | (Binary (Int 1, "+", Int 1)) -> ()
+                    | x -> Assert.Fail(sprintf "%A" x)
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)

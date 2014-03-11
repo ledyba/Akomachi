@@ -1,11 +1,13 @@
 ﻿namespace Akomachi
 
 open System
-open FParsec.Primitives
-open FParsec.CharParsers
-open FParsec.Error
+open FParsec
 
+#nowarn "40"
 module Parser =
+    (*******************************************************************)
+    (* Literals *)
+    (*******************************************************************)
     let internal numberFormat = 
                            NumberLiteralOptions.AllowMinusSign
                        ||| NumberLiteralOptions.AllowFraction
@@ -15,7 +17,7 @@ module Parser =
     let numLiteral : Parser<AST, unit> =
         numberLiteral numberFormat "number"
         |>> fun p ->
-                if p.IsInteger then Int (int64 p.String)
+                if p.IsInteger then Int (int p.String)
                 else Float (float p.String)
     // These literals are from FParsec JSON samples.
     // Copyright (c) Stephan Tolksdorf 2008-2011
@@ -42,4 +44,40 @@ module Parser =
                 (stringsSepBy (manySatisfy (fun c -> c <> '"' && c <> '\\'))
                               (str "\\" >>. (escape <|> unicodeEscape)))
         |>> AST.String
-    
+    let boolLiteral : Parser<AST, unit>
+        = (stringReturn "true" true <|> stringReturn "false" false) |>> AST.Bool
+    let internal isAsciiIdStart c    = isAsciiLetter c
+    let internal isAsciiIdContinue c = isAsciiLetter c || isDigit c
+    let internal optsWithPreCheck = IdentifierOptions(
+                                     isAsciiIdStart = isAsciiIdStart,
+                                     isAsciiIdContinue = isAsciiIdContinue,
+                                     allowAllNonAsciiCharsInPreCheck = true,
+                                     normalization = System.Text.NormalizationForm.FormKC,
+                                     normalizeBeforeValidation = true)
+    let internal ident : Parser<string, unit> = (identifier optsWithPreCheck)
+    let identLiteral : Parser<AST, unit> = ident |>> AST.Name
+    (*******************************************************************)
+    (* Syntax *)
+    (*******************************************************************)
+    let internal ws = spaces
+    let internal strws s = pstring s .>> ws
+    let expr, exprImpl = createParserForwardedToRef()
+    let primary : Parser<AST, unit> =
+            numLiteral <|>
+            strLiteral <|>
+            boolLiteral
+    let postFix : Parser<AST, unit> = primary
+    let opp = new FParsec.OperatorPrecedenceParser<AST,unit,unit>()
+    let exprI = opp.ExpressionParser
+    opp.TermParser <- (postFix.>> ws) <|> between (strws "(") (strws ")") exprI
+    opp.AddOperator(InfixOperator("+", ws, 1, Associativity.Left, fun x y -> Binary (x, "+", y)))
+    opp.AddOperator(InfixOperator("-", ws, 1, Associativity.Left, fun x y -> Binary (x, "-", y)))
+    opp.AddOperator(InfixOperator("*", ws, 2, Associativity.Left, fun x y -> Binary (x, "*", y)))
+    opp.AddOperator(InfixOperator("/", ws, 2, Associativity.Left, fun x y -> Binary (x, "/", y)))
+    opp.AddOperator(InfixOperator("%", ws, 2, Associativity.Left, fun x y -> Binary (x, "%", y)))
+    opp.AddOperator(InfixOperator("^", ws, 3, Associativity.Right, fun x y -> Binary (x, "^", y)))
+    opp.AddOperator(PrefixOperator("-", ws, 4, true, fun x -> UniMinus x))
+    opp.AddOperator(PrefixOperator("+", ws, 4, true, fun x -> UniPlus x))
+    opp.AddOperator(PrefixOperator("!", ws, 4, true, fun x -> UniNot x))
+    opp.AddOperator(PrefixOperator("~", ws, 4, true, fun x -> UniComplement x))
+    do exprImpl := ws >>. exprI .>> eof
