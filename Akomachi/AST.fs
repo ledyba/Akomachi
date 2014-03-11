@@ -7,15 +7,18 @@ type AST =
     | Bool of bool
     | Null
     | Object of (string * AST) list
+    | List of AST list
+    | Block of AST list
+    | Ident of string
+
     | Access of AST * string
     | Index of AST * AST
     | Call of AST * AST list
+
     | Uni of string * AST
     | Binary of AST * string * AST
     | Assign of AST * AST
-    | List of AST list
-    | Block of AST list
+
     | Fun of string list * AST
-    | Ident of string
     | Var of string * AST
 

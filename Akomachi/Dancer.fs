@@ -50,16 +50,19 @@ module Stage =
             | AST.String x -> String x
             | AST.Null -> Null
             | AST.Object elements -> Null
+            | AST.List exprs -> Null
+            | AST.Block exprs -> Null
+            | AST.Ident name -> Null
+
             | AST.Access (value, name) -> Null
             | AST.Index (value, index) -> Null
             | AST.Call (value, args) -> Null
+
             | AST.Uni (sym, value) -> Null
             | AST.Binary (val1, sym, val2) -> Null
             | AST.Assign (val1, val2) -> Null
-            | AST.List exprs -> Null
-            | AST.Block exprs -> Null
+
             | AST.Fun (args, exprs) -> Null
-            | AST.Ident name -> Null
             | AST.Var (name, expr) -> Null
     let dance (w:World) (src:AST) = dance_ w [w.Global] [] src
 (*
