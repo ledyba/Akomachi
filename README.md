@@ -33,7 +33,11 @@ true; false; //bool
 // オブジェクト記法
 var obj = {val1 -> 1, val2 -> true};
 obj.val2; // --> true
+```
 
+すべては式
+------------
+```
 // 演算子は中置記法
 1+2;
 
@@ -47,7 +51,10 @@ res; // --> "t"
 // 複文を書く時はカッコで囲う
 var res = if 1 == 1 then {var x=1; x+1;} else "f";
 res; // --> 2
-
+```
+関数
+-------
+```
 // 関数
 var fn = fun (a,b,c) a+b+c;
 
