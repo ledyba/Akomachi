@@ -11,8 +11,19 @@ open FParsec.Error
 type EvalTest() =
     [<TestMethod>]
     member this.TestEval() =
-        let v =
-          match (run Parser.prog "1+2+3") with
-            | Success (r,us,p)   -> Stage.dance (Stage.World()) r
-            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null
-        ()
+      match (run Parser.prog "1+2+3") with
+        | Success (r,us,p)   ->
+             match Stage.dance (Stage.World()) r with
+                | (Value.Int 6) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+    [<TestMethod>]
+    member this.TestFunc() =
+      match (run Parser.prog "var z = fun (x, y) x+y; z(1,2)") with
+        | Success (r,us,p)   ->
+             match Stage.dance (Stage.World()) r with
+                | (Value.Int 3) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      
+      ()

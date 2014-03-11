@@ -59,6 +59,16 @@ module Stage =
         let d = new AkObj();
         d.Add("__proto__", Obj obj)
         d
+    let rec internal protoSearch (akobj : AkObj) (name:string) =
+                                if (akobj.ContainsKey name)
+                                    then akobj
+                                    else if akobj.ContainsKey "__proto__"
+                                        then protoSearchV (akobj.Item "__proto__") name
+                                        else raise (invalidArg "" "")
+    and internal protoSearchV (obj : Value) (name:string) =
+                        match obj with
+                            | Obj akobj -> protoSearch akobj name
+                            | _ -> raise (invalidArg "" "")
     let rec internal eval (w:World) (selfStack:Value list) (stack:AkObj list) (src:AST) : Value =
         match src with
             | AST.Int x -> Int x
@@ -68,8 +78,8 @@ module Stage =
             | AST.Null -> Null
             | AST.Object elements -> Obj ( AkObj(dict ( List.map (fun (n, ast) -> (n, (eval w selfStack stack ast))) elements)) )
             | AST.List exprs -> Obj ( list2obj ( List.map ( fun ast -> eval w selfStack stack ast ) exprs ) )
-            | AST.Block exprs -> List.fold ( fun last ast -> (eval w selfStack stack ast) ) Null exprs
-            | AST.Ident name -> get w (Obj (List.head stack)) name
+            | AST.Block exprs -> evalList w selfStack stack exprs
+            | AST.Ident name -> (protoSearch (List.head stack) name).Item name
 
             | AST.Access (valueAst, name) -> get w (eval w selfStack stack valueAst) name
             | AST.Index (valueAst, index) -> get w (eval w selfStack stack valueAst) (val2string w (eval w selfStack stack valueAst))
@@ -83,19 +93,15 @@ module Stage =
                             | Value.Fun (env, arglist, fnast) -> eval w (obj :: selfStack) ((inheritObj env) :: stack) fnast
                             | Value.NativeFunc fn -> (fn obj args)
                             | _ -> raise (invalidArg "" "")
-                    | (AST.Ident name) -> 
-                        let fn = get w (Obj (List.head stack)) name
-                        match fn with
-                            | Value.Fun (env, arglist, fnast) -> eval w (Null :: selfStack) ((inheritObj env) :: stack) fnast
-                            | Value.NativeFunc fn -> (fn Null args)
-                            | _ -> raise (invalidArg "" "")
                     | v ->
                         match (eval w selfStack stack v) with
-                            | Value.Fun (env, arglist, fnast) -> eval w (Null :: selfStack) ((inheritObj env) :: stack) fnast
+                            | Value.Fun (env, arglist, fnast) ->
+                                let env = (inheritObj env)
+                                for (n,v) in List.zip arglist args do
+                                    env.Add(n,v)
+                                eval w (Null :: selfStack) (env :: stack) fnast
                             | Value.NativeFunc fn -> (fn Null args)
                             | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
-                        
-
             | AST.Uni (sym, valueAst) ->
                 let obj = eval w selfStack stack valueAst
                 let fn = get w obj sym
@@ -118,21 +124,20 @@ module Stage =
                         let obj2 = eval w selfStack stack val2ast
                         set w obj1 name obj2
                     | AST.Ident name ->
-                        let rec search (name:string) (obj:AkObj)=
-                            if (obj.ContainsKey name)
-                                then obj
-                                else
-                                    if obj.ContainsKey "__proto__"
-                                        then obj
-                                        else raise (invalidArg "" "")
-                        let obj1 = search name (List.head stack)
+                        let obj1 = protoSearch (List.head stack) name
                         let obj2 = eval w selfStack stack val2ast
                         set w (Obj obj1) name obj2
                     | _ -> raise (invalidArg "" "")
             | AST.Fun (args, exprs) -> Value.Fun ((inheritObj (List.head stack)), args, exprs)
             | AST.Var (name, expr) ->
                 let obj = eval w selfStack stack expr
+                (List.head stack).Remove(name) |> ignore
                 (List.head stack).Add(name, obj)
                 obj
+    and internal evalList (w:World) (selfStack:Value list) (scopeStack:AkObj list) (src:AST list) : Value =
+        match src with
+            | it :: [] -> eval w selfStack scopeStack it
+            | it :: left :: xs -> eval w selfStack scopeStack it |> ignore; evalList w selfStack scopeStack (left :: xs)
+            | [] -> Null
     let dance (w:World) (src:AST) = eval w [] [w.Global] (AST.Call (src, []))
         
