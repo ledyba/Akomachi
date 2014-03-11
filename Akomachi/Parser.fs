@@ -120,4 +120,4 @@ module Parser =
     let expr3 = (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun) <|> expr2
     let expr4 = ( (((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr3) |>> AST.Var) <|> expr3
     do exprImpl := expr4
-    let prog = ws >>. exprs .>> eof
+    let prog = (ws >>. exprs .>> eof) |>> fun e -> AST.Fun ([], Block e)

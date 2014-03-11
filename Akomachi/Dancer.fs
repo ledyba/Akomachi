@@ -49,6 +49,7 @@ module Stage =
             | AST.Bool x -> Bool x
             | AST.String x -> String x
             | AST.Null -> Null
+            | AST.Object elements -> Null
             | AST.Access (value, name) -> Null
             | AST.Index (value, index) -> Null
             | AST.Call (value, args) -> Null
