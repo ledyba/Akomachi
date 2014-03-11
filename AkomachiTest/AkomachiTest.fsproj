@@ -49,7 +49,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Library1.fs" />
+    <Compile Include="ParserTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Akomachi\Akomachi.fsproj">

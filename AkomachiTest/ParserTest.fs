@@ -73,3 +73,33 @@ type ParseTest() =
                     | [Call (Access ((Ident "obj"), "method"), [Int 1; Int 2; Int 3]); Assign (Ident "obj", Binary (Binary (Int 1, "+", Int 10), "^", Int 10)) ] -> ()
                     | x -> Assert.Fail(sprintf "%A" x)
             | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
+    [<TestMethod>]
+    member this.TestFunc() =
+        match (run Parser.prog "fun (a,b, c) {1+2+z;}") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | [Fun (["a"; "b"; "c"],Block [Binary (Binary (Int 1,"+",Int 2),"+",Ident "z")])] -> ()
+                    | x -> Assert.Fail(sprintf "%A" x)
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
+        match (run Parser.prog "var fn = fun (a,b, c) {1+2+z;}") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | [Var ("fn", Fun (["a"; "b"; "c"],Block [Binary (Binary (Int 1,"+",Int 2),"+",Ident "z")]))] -> ()
+                    | x -> Assert.Fail(sprintf "%A" x)
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
+    [<TestMethod>]
+    member this.TestFunCall() =
+        match (run Parser.prog "obj(1,2,3,4,true);") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | [Call (Ident "obj",[Int 1; Int 2; Int 3; Int 4; Bool true])] -> ()
+                    | x -> Assert.Fail(sprintf "%A" x)
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
+    [<TestMethod>]
+    member this.TestObject() =
+        match (run Parser.prog "obj(1,2,3,4,true);{obj -> 1, obj2 -> 2}") with
+            | Success (r,us,p)   -> 
+                match r with
+                    | [Call (Ident "obj",[Int 1; Int 2; Int 3; Int 4; Bool true]); Object [("obj", Int 1); ("obj2", Int 2)]] -> ()
+                    | x -> Assert.Fail(sprintf "%A" x)
+            | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)

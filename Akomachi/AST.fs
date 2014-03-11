@@ -5,7 +5,8 @@ type AST =
     | Float of float
     | String of string
     | Bool of bool
-    | Name of string
+    | Null
+    | Object of (string * AST) list
     | Access of AST * string
     | Index of AST * AST
     | Call of AST * AST list
@@ -13,5 +14,8 @@ type AST =
     | Binary of AST * string * AST
     | Assign of AST * AST
     | List of AST list
-    | Fun of string list * AST list
+    | Block of AST list
+    | Fun of string list * AST
     | Ident of string
+    | Var of string * AST
+

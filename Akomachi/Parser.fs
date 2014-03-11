@@ -55,7 +55,8 @@ module Parser =
                                      normalization = System.Text.NormalizationForm.FormKC,
                                      normalizeBeforeValidation = true)
     let internal ident : Parser<string, unit> = (identifier optsWithPreCheck)
-    let identLiteral : Parser<AST, unit> = ident |>> AST.Name
+    let identLiteral : Parser<AST, unit> = ident |>> AST.Ident
+    let nullLiteral = stringReturn "null" AST.Null
     (*******************************************************************)
     (* Syntax *)
     (*******************************************************************)
@@ -65,11 +66,14 @@ module Parser =
     let internal callOp = between (strws "(") (strws ")") (sepBy expr (strws ","))
     let internal indexOp = between (strws "[") (strws "]") expr
     let internal accessOp = (strws ".") >>. ident
+    let exprs = sepEndBy expr (strws ";")
+    let block = between (strws "{") (strws "}") exprs
     let primary : Parser<AST, unit> =
             numLiteral <|>
             strLiteral <|>
             boolLiteral <|>
-            (ident |>> AST.Ident)
+            nullLiteral <|>
+            identLiteral
     let postFixBase =
             primary >>= fun r ->
                 choice [
@@ -107,9 +111,13 @@ module Parser =
     opp.AddOperator(PrefixOperator("+", ws, 7, true, fun x -> Uni ("+", x)))
     opp.AddOperator(PrefixOperator("!", ws, 7, true, fun x -> Uni ("!", x)))
     opp.AddOperator(PrefixOperator("~", ws, 7, true, fun x -> Uni ("~", x)))
-    let expr2 = (between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List) <|> expr1
-    let exprs = sepBy expr (strws ";")
-    let block = between (strws "{") (strws "}") exprs
-    let expr3 = (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. block) |>> AST.Fun) <|> expr2
-    do exprImpl := expr3
+    let expr2 =
+        choice
+            [(between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List);
+             attempt (between (strws "{") (strws "}") (sepBy (ident .>> ws .>> strws "->" .>>. expr ) (strws ",")) |>> AST.Object);
+             (block |>> AST.Block);
+             expr1 ]
+    let expr3 = (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun) <|> expr2
+    let expr4 = ( (((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr3) |>> AST.Var) <|> expr3
+    do exprImpl := expr4
     let prog = ws >>. exprs .>> eof
