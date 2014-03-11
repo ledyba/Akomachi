@@ -71,3 +71,13 @@ var fn = fun (a,b,c) { a+b+c; 1+2; }
 global.z = 1;
 z; // --> 1
 ```
+
+self
+--------
+```
+var obj = { fn -> fun (x, y, z) self.x, x->true };
+obj.fn(1,2,3); // --> true つまり、selfの仕様はJSのthisと同じ
+
+var fn = fun (x, y, z) self;
+fn(1,2,3); // --> null このあたりも同じ
+```
