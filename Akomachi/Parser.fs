@@ -62,22 +62,41 @@ module Parser =
     let internal ws = spaces
     let internal strws s = pstring s .>> ws
     let expr, exprImpl = createParserForwardedToRef()
+    let internal callOp = between (strws "(") (strws ")") (sepBy expr (strws ","))
+    let internal indexOp = between (strws "[") (strws "]") expr
+    let internal accessOp = (strws ".") >>. ident
     let primary : Parser<AST, unit> =
             numLiteral <|>
             strLiteral <|>
-            boolLiteral
-    let postFix : Parser<AST, unit> = primary
+            boolLiteral <|>
+            (ident |>> AST.Ident)
+    let postFixBase =
+            primary >>= fun r ->
+                choice [
+                    callOp |>> fun x -> AST.Call (r,x);
+                    indexOp |>> fun x -> AST.Index (r,x);
+                    accessOp |>> fun x -> AST.Access (r, x)
+                    preturn r
+                ]
+    let postFix =
+            postFixBase >>= fun r ->
+                (callOp |>> fun x -> AST.Call (r,x)) <|> (indexOp |>> fun x -> AST.Index (r,x)) <|> preturn r
     let opp = new FParsec.OperatorPrecedenceParser<AST,unit,unit>()
-    let exprI = opp.ExpressionParser
-    opp.TermParser <- (postFix.>> ws) <|> between (strws "(") (strws ")") exprI
+    let expr1 = opp.ExpressionParser
+    opp.TermParser <- (postFix.>> ws) <|> between (strws "(") (strws ")") expr
     opp.AddOperator(InfixOperator("+", ws, 1, Associativity.Left, fun x y -> Binary (x, "+", y)))
     opp.AddOperator(InfixOperator("-", ws, 1, Associativity.Left, fun x y -> Binary (x, "-", y)))
     opp.AddOperator(InfixOperator("*", ws, 2, Associativity.Left, fun x y -> Binary (x, "*", y)))
     opp.AddOperator(InfixOperator("/", ws, 2, Associativity.Left, fun x y -> Binary (x, "/", y)))
     opp.AddOperator(InfixOperator("%", ws, 2, Associativity.Left, fun x y -> Binary (x, "%", y)))
     opp.AddOperator(InfixOperator("^", ws, 3, Associativity.Right, fun x y -> Binary (x, "^", y)))
-    opp.AddOperator(PrefixOperator("-", ws, 4, true, fun x -> UniMinus x))
-    opp.AddOperator(PrefixOperator("+", ws, 4, true, fun x -> UniPlus x))
-    opp.AddOperator(PrefixOperator("!", ws, 4, true, fun x -> UniNot x))
-    opp.AddOperator(PrefixOperator("~", ws, 4, true, fun x -> UniComplement x))
-    do exprImpl := ws >>. exprI .>> eof
+    opp.AddOperator(PrefixOperator("-", ws, 4, true, fun x -> Uni ("-", x)))
+    opp.AddOperator(PrefixOperator("+", ws, 4, true, fun x -> Uni ("+", x)))
+    opp.AddOperator(PrefixOperator("!", ws, 4, true, fun x -> Uni ("!", x)))
+    opp.AddOperator(PrefixOperator("~", ws, 4, true, fun x -> Uni ("~", x)))
+    opp.AddOperator(InfixOperator("=", ws, 10, Associativity.Right, fun x y -> Assign (x,y)))
+    let expr2 = (between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List) <|> expr1
+    let block = sepBy expr newline
+    let expr3 = (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. block) |>> AST.Fun) <|> expr2
+    do exprImpl := expr3
+    let prog = ws >>. expr .>> eof
