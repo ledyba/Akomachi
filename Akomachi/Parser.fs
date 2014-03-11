@@ -57,6 +57,7 @@ module Parser =
     let internal ident : Parser<string, unit> = (identifier optsWithPreCheck)
     let identLiteral : Parser<AST, unit> = ident |>> AST.Ident
     let nullLiteral = stringReturn "null" AST.Null
+    let selfLiteral = stringReturn "self" AST.Self
     (*******************************************************************)
     (* Syntax *)
     (*******************************************************************)
@@ -73,6 +74,7 @@ module Parser =
             strLiteral <|>
             boolLiteral <|>
             nullLiteral <|>
+            selfLiteral <|>
             identLiteral
     let postFixBase =
             primary >>= fun r ->

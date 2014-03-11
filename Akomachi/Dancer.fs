@@ -81,6 +81,7 @@ module Stage =
             | AST.List exprs -> Obj ( list2obj ( List.map ( fun ast -> eval w selfStack stack ast ) exprs ) )
             | AST.Block exprs -> evalList w selfStack stack exprs
             | AST.Ident name -> (protoSearch (List.head stack) name).Item name
+            | AST.Self -> (List.head selfStack)
 
             | AST.Access (valueAst, name) -> get w (eval w selfStack stack valueAst) name
             | AST.Index (valueAst, index) -> get w (eval w selfStack stack valueAst) (val2string w (eval w selfStack stack valueAst))

@@ -10,6 +10,7 @@ type AST =
     | List of AST list
     | Block of AST list
     | Ident of string
+    | Self
 
     | Access of AST * string
     | Index of AST * AST
