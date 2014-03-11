@@ -96,7 +96,8 @@ module Parser =
     opp.AddOperator(PrefixOperator("~", ws, 4, true, fun x -> Uni ("~", x)))
     opp.AddOperator(InfixOperator("=", ws, 10, Associativity.Right, fun x y -> Assign (x,y)))
     let expr2 = (between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List) <|> expr1
-    let block = sepBy expr newline
+    let exprs = sepBy expr (strws ";")
+    let block = between (strws "{") (strws "}") exprs
     let expr3 = (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. block) |>> AST.Fun) <|> expr2
     do exprImpl := expr3
-    let prog = ws >>. expr .>> eof
+    let prog = ws >>. exprs .>> eof

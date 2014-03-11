@@ -64,12 +64,12 @@ type ParseTest() =
         match (run Parser.prog "   ( true     + 1    )  ") with
             | Success (r,us,p)   -> 
                 match r with
-                    | (Binary (Bool true, "+", Int 1)) -> ()
+                    | [(Binary (Bool true, "+", Int 1))] -> ()
                     | x -> Assert.Fail(sprintf "%A" x)
             | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
-        match (run Parser.prog "obj.method(1,2,3)") with
+        match (run Parser.prog "obj.method(1,2,3); obj = 1") with
             | Success (r,us,p)   -> 
                 match r with
-                    | (Binary (Bool true, "+", Int 1)) -> ()
+                    | [Call (Access ((Ident "obj"), "method"), [Int 1; Int 2; Int 3]); Assign (Ident "obj", Int 1)] -> ()
                     | x -> Assert.Fail(sprintf "%A" x)
             | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
