@@ -46,4 +46,8 @@ var fn = fun (a,b,c) a+b+c;
 
 // 複文を書く時はカッコで囲う
 var fn = fun (a,b,c) { a+b+c; 1+2; }
+
+// グローバル変数を宣言するには、"global"に代入。
+global.z = 1;
+z; // --> 1
 ```
