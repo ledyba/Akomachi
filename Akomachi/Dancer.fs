@@ -11,8 +11,10 @@ module Stage =
         let stringP = new System.Collections.Generic.Dictionary<string, string -> Value list -> Value>()
         do
             globalObj.Add("global", Obj globalObj)
-            intP.Add("+", fun x nums -> (Int (x + List.fold (+) 0 (List.map Val.val2int nums))))
+            intP.Add("+", fun x ((Int num) :: left) -> Int (x + num))
+            intP.Add("-", fun x ((Int num) :: left) -> Int (x - num))
             intP.Add("==", fun x ((Int num) :: left) -> Bool (x = num))
+            intP.Add("<=", fun x ((Int num) :: left) -> Bool (x <= num))
         member self.Global = globalObj
         
         member internal self.intProvider = intP
