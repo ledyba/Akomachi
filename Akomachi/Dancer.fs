@@ -23,6 +23,8 @@ module Stage =
             intP.regFun<int,bool> (">", (>))
             intP.regFun<int,bool> ("<=", (<=))
             intP.regFun<int,bool> ("<", (<))
+            intP.regFun<int,int> ("^", pown)
+
         member self.Global = globalObj
         
         member internal self.intProvider = intP

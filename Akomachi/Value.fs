@@ -69,20 +69,18 @@ type Provider<'a>(description:string) =
     member self.Set (name:string) (value:Value) =
         dic.Remove name |> ignore
         dic.Add (name,value)
-    member self.regFun (name:string, f: 'a list -> 'b ) : unit =
+    member self.regFunList (name:string, f: 'a list -> 'b ) : unit =
         let castF = unboxFun<'a>
         let boxF = boxFun<'b>
         let nf:AkNativeFunc = fun xs -> boxF (f (List.map castF xs))
         self.Set name (NativeFunc nf) |> ignore
-    (*
     member self.regFun (name:string, (f: 'a -> 'b)) : unit=
-        self.regFun (name,
+        self.regFunList (name,
             fun args->
                 match args with
                     | a :: _ -> (f a)
                     | _ -> raise (invalidOp ("You need two arguments for " + name))
         )
-    *)
     member self.regFun (name:string, (f: 'a -> ' b -> 'c)) : unit=
         let castFA = unboxFun<'a>
         let castFB = unboxFun<'b>
