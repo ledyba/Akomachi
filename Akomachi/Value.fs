@@ -52,6 +52,7 @@ module ValueHelper =
         if      t.Equals(typeof<int>)   then unbox<Value->'T> (box val2int)
         else if t.Equals(typeof<float>) then unbox<Value->'T> (box val2float)
         else if t.Equals(typeof<int>)   then unbox<Value->'T> (box val2string)
+        else if t.Equals(typeof<bool>)   then unbox<Value->'T> (box val2bool)
         else (raise (invalidOp "Unsupported"))
     let inline boxFun<'T> : 'T -> Value =
         let t = typeof<'T>;

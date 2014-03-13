@@ -36,8 +36,22 @@ module Stage =
             regBinary "*" (*) (*)
             regBinary "%" (%) (%)
             regBinary "^" (fun x y -> System.Math.Pow(x,y)) pown
-            intP.regFun<int,int> ("+", (+))
-            intP.regFun<int,int> ("-", (-))
+            let regUniBin name fn1 fn2 fn3 fn4 =
+                    let fn lst =
+                        match lst with
+                            | Int x :: [] -> Int (fn1 x)
+                            | Float x :: [] -> Float (fn2 x)
+                            | Int x :: Int y :: [] -> Int (fn3 x y)
+                            | Int x :: Float y :: [] -> Float (fn4 (float x) y)
+                            | Float x :: Int y :: [] -> Float (fn4 x (float y))
+                            | Float x :: Float y :: [] -> Float (fn4 x y)
+                            | _ -> (raise (invalidOp ("You need two arguments for " + name)))
+                    intP.Set name (NativeFunc fn) |> ignore
+                    floatP.Set name (NativeFunc fn) |> ignore
+            regUniBin "+" id id (+) (+)
+            regUniBin "-" (fun x-> -x) (fun x-> -x) (-) (-)
+            intP.regFun ("~", (~~~))
+            boolP.regFun ("!", fun x -> not x)
             regBinaryBool "==" (=) (=)
             regBinaryBool "!=" (<>) (<>)
             regBinaryBool ">=" (>=) (>=)
