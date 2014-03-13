@@ -2,19 +2,25 @@
 
 open FParsec
 
+[<AutoOpen>]
 module Stage =
     type World ()=
         let globalObj = new AkObj()
-        let intP = new System.Collections.Generic.Dictionary<string, int -> Value list -> Value>()
-        let floatP = new System.Collections.Generic.Dictionary<string, float -> Value list -> Value >()
-        let boolP = new System.Collections.Generic.Dictionary<string, bool -> Value list -> Value>()
-        let stringP = new System.Collections.Generic.Dictionary<string, string -> Value list -> Value>()
+        let intP = new Provider<int>("Int provider")
+        let floatP = new Provider<float>("Float provider")
+        let boolP = new Provider<bool>("Bool provider")
+        let stringP = new Provider<string>("String provider")
         do
             globalObj.Add("global", Obj globalObj)
-            intP.Add("+", fun x ((Int num) :: left) -> Int (x + num))
-            intP.Add("-", fun x ((Int num) :: left) -> Int (x - num))
-            intP.Add("==", fun x ((Int num) :: left) -> Bool (x = num))
-            intP.Add("<=", fun x ((Int num) :: left) -> Bool (x <= num))
+            intP.regFun "+" (fun (x ::y :: _) -> (x+y))
+            intP.regFun "-" (fun (x ::y :: _) -> (x-y))
+            intP.regFun "/" (fun (x ::y :: _) -> (x/y))
+            intP.regFun "*" (fun (x ::y :: _) -> (x*y))
+            intP.regFun "*" (fun (x ::y :: _) -> (x*y))
+            intP.regFun "==" (fun (x ::y :: _) -> (x=y))
+            intP.regFun "!=" (fun (x ::y :: _) -> (x<>y))
+            intP.regFun ">=" (fun (x ::y :: _) -> (x>=y))
+            intP.regFun "<=" (fun (x ::y :: _) -> (x<=y))
         member self.Global = globalObj
         
         member internal self.intProvider = intP
@@ -23,13 +29,13 @@ module Stage =
         member internal self.stringProvider = stringP
     let internal get (w:World) (obj:Value) (name:string):Value =
         match obj with
-            | Int    i -> NativeFunc ( fun (Int s) f -> (w.intProvider.Item name) s f )
-            | Float  f -> NativeFunc ( fun (Float s) f -> (w.floatProvider.Item name) s f )
-            | Bool   b -> NativeFunc ( fun (Bool s) f -> (w.boolProvider.Item name) s f)
-            | String s -> NativeFunc ( fun (String s) f-> (w.stringProvider.Item name) s f)
+            | Int    i -> w.intProvider.Get name
+            | Float  f -> w.floatProvider.Get name
+            | Bool   b -> w.boolProvider.Get name
+            | String s -> w.stringProvider.Get name
             | Obj    obj -> obj.Item name
             | Fun    (env, arglist, body) -> Null
-            | NativeObj obj -> Null
+            | NativeObject obj -> Null
             | NativeFunc obj -> Null
             | Null -> Null
     let internal set (w:World) (obj:Value) (name:string) (v:Value):Value =
@@ -43,18 +49,9 @@ module Stage =
                 obj.Add(name, v);
                 Obj obj
             | Fun    (env, arglist, body) -> Null
-            | NativeObj obj -> obj.Set name v
+            | NativeObject obj -> obj.Set name v
             | NativeFunc obj -> Null
             | Null -> Null
-    let internal val2string (w:World) (obj:Value) :string =
-        match obj with
-            | Int    i -> (string i)
-            | Float  f -> (string f)
-            | Bool   b -> (string b)
-            | String s -> s
-            | Obj    obj -> (sprintf "%A" obj)
-            | Fun    (env, arglist, body) -> (sprintf "Fun %A -> %A" arglist body)
-            | obj -> sprintf "%A" obj
     let internal list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
     let internal inheritObj (obj : AkObj) =
         let d = new AkObj();
@@ -84,7 +81,7 @@ module Stage =
             | AST.Self -> (List.head selfStack)
 
             | AST.Access (valueAst, name) -> get w (eval w selfStack stack valueAst) name
-            | AST.Index (valueAst, index) -> get w (eval w selfStack stack valueAst) (val2string w (eval w selfStack stack valueAst))
+            | AST.Index (valueAst, index) -> get w (eval w selfStack stack valueAst) (val2string (eval w selfStack stack valueAst))
             | AST.Call (valueAst, argAst) ->
                 let args = List.map ( fun ast -> eval w selfStack stack ast ) argAst
                 match valueAst with
@@ -93,7 +90,7 @@ module Stage =
                         let fn = get w obj name
                         match fn with
                             | Value.Fun (env, arglist, fnast) -> eval w (obj :: selfStack) ((inheritObj env) :: stack) fnast
-                            | Value.NativeFunc fn -> (fn obj args)
+                            | Value.NativeFunc fn -> (fn (obj :: args))
                             | _ -> raise (invalidArg "" "")
                     | v ->
                         match (eval w selfStack stack v) with
@@ -105,7 +102,7 @@ module Stage =
                                 for (n,v) in List.zip arglist args do
                                     env.Add(n,v)
                                 eval w (Null :: selfStack) (env :: stack) fnast
-                            | Value.NativeFunc fn -> (fn Null args)
+                            | Value.NativeFunc fn -> (fn (Null :: args))
                             | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
             | AST.If (condAst, thenAst, elseAst) ->
                 match eval w selfStack stack condAst with
@@ -117,7 +114,7 @@ module Stage =
                 let fn = get w obj sym
                 match fn with
                     | Value.Fun (env, arglist, fnast) -> eval w (obj :: selfStack) ((inheritObj env) :: stack) fnast
-                    | Value.NativeFunc fn -> (fn obj [])
+                    | Value.NativeFunc fn -> (fn [obj])
                     | _ -> raise (invalidArg "" "")
             | AST.Binary (val1ast, sym, val2ast) ->
                 let obj1 = eval w selfStack stack val1ast
@@ -125,7 +122,7 @@ module Stage =
                 let fn = get w obj1 sym
                 match fn with
                     | Value.Fun (env, arglist, fnast) -> eval w (obj1 :: selfStack) ((inheritObj env) :: stack) fnast
-                    | Value.NativeFunc fn -> (fn obj1 [obj2])
+                    | Value.NativeFunc fn -> (fn [obj1; obj2])
                     | _ -> raise (invalidArg "" "")
             | AST.Assign (val1ast, val2ast) ->
                 match val1ast with
