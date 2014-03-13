@@ -11,19 +11,39 @@ module Stage =
         let boolP = new Provider<bool>("Bool provider")
         let stringP = new Provider<string>("String provider")
         do
+            let regBinary name fn1 fn2 =
+                let natfn lst =
+                      match lst with
+                        | Int x :: Float y :: _ -> Float (fn1 (float x) y)
+                        | Float x :: Float y :: _ -> Float (fn1 x y)
+                        | Float x :: Int y :: _ -> Float (fn1 x (float y))
+                        | Int x :: Int y :: _ -> Int (fn2 x y)
+                        | _ -> (raise (invalidOp ("You need two arguments for " + name)))
+                intP.Set name (NativeFunc natfn) |> ignore
+                floatP.Set name (NativeFunc natfn) |> ignore
+            let regBinaryBool name fn1 fn2 =
+                let natfn lst =
+                      match lst with
+                       |  Int x :: Float y :: _ -> Bool (fn1 (float x) y)
+                       |  Float x :: Float y :: _ -> Bool (fn1 x y)
+                       |  Float x :: Int y :: _ -> Bool (fn1 x (float y))
+                       |  Int x :: Int y :: _ -> Bool (fn2 x y)
+                       | _ -> (raise (invalidOp ("You need two arguments for " + name)))
+                intP.Set name (NativeFunc natfn) |> ignore
+                floatP.Set name (NativeFunc natfn) |> ignore
             globalObj.Add("global", Obj globalObj)
+            regBinary "/" (/) (/)
+            regBinary "*" (*) (*)
+            regBinary "%" (%) (%)
+            regBinary "^" (fun x y -> System.Math.Pow(x,y)) pown
             intP.regFun<int,int> ("+", (+))
             intP.regFun<int,int> ("-", (-))
-            intP.regFun<int,int> ("/", (/))
-            intP.regFun<int,int> ("*", (*))
-            intP.regFun<int,int> ("%" ,(%))
-            intP.regFun<int,bool> ("==", (=))
-            intP.regFun<int,bool> ("!=", (<>))
-            intP.regFun<int,bool> (">=", (>=))
-            intP.regFun<int,bool> (">", (>))
-            intP.regFun<int,bool> ("<=", (<=))
-            intP.regFun<int,bool> ("<", (<))
-            intP.regFun<int,int> ("^", pown)
+            regBinaryBool "==" (=) (=)
+            regBinaryBool "!=" (<>) (<>)
+            regBinaryBool ">=" (>=) (>=)
+            regBinaryBool ">" (>) (>)
+            regBinaryBool "<=" (<=) (<=)
+            regBinaryBool "<" (<) (<)
 
         member self.Global = globalObj
         
