@@ -4,7 +4,6 @@ open FParsec
 
 [<AutoOpen>]
 module Stage =
-    let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
     type Akomachi ()=
         let globalObj = new AkObj()
         let intP = new Provider<int>("Int provider")

@@ -51,7 +51,7 @@
     <Compile Include="AST.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Value.fs" />
-    <Compile Include="Dancer.fs" />
+    <Compile Include="Dance.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

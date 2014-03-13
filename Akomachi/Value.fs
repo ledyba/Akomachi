@@ -63,6 +63,7 @@ module ValueHelper =
         else if  t.Equals(typeof<AkObj>) then (unbox<'T->Value>  (box Obj))
         else if  t.IsInstanceOfType(typeof<AkNativeObject>) then (unbox<'T->Value>  (box NativeObject))
         else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
+    let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
 type Provider<'a>(description:string) =
     let dic = new System.Collections.Generic.Dictionary<string, Value>()
     member self.ToString  = sprintf "Provider of %s" ((typeof<'a>).ToString())
