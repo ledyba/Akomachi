@@ -12,15 +12,17 @@ module Stage =
         let stringP = new Provider<string>("String provider")
         do
             globalObj.Add("global", Obj globalObj)
-            intP.regFun "+" (fun (x ::y :: _) -> (x+y))
-            intP.regFun "-" (fun (x ::y :: _) -> (x-y))
-            intP.regFun "/" (fun (x ::y :: _) -> (x/y))
-            intP.regFun "*" (fun (x ::y :: _) -> (x*y))
-            intP.regFun "*" (fun (x ::y :: _) -> (x*y))
-            intP.regFun "==" (fun (x ::y :: _) -> (x=y))
-            intP.regFun "!=" (fun (x ::y :: _) -> (x<>y))
-            intP.regFun ">=" (fun (x ::y :: _) -> (x>=y))
-            intP.regFun "<=" (fun (x ::y :: _) -> (x<=y))
+            intP.regFun<int,int> ("+", (+))
+            intP.regFun<int,int> ("-", (-))
+            intP.regFun<int,int> ("/", (/))
+            intP.regFun<int,int> ("*", (*))
+            intP.regFun<int,int> ("%" ,(%))
+            intP.regFun<int,bool> ("==", (=))
+            intP.regFun<int,bool> ("!=", (<>))
+            intP.regFun<int,bool> (">=", (>=))
+            intP.regFun<int,bool> (">", (>))
+            intP.regFun<int,bool> ("<=", (<=))
+            intP.regFun<int,bool> ("<", (<))
         member self.Global = globalObj
         
         member internal self.intProvider = intP
