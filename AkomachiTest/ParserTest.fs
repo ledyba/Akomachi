@@ -97,7 +97,7 @@ type ParseTest() =
             | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg)
     [<TestMethod>]
     member this.TestObject() =
-        match (run Parser.prog "obj(1,2,3,4,true);{obj -> 1, obj2 -> 2}") with
+        match (run Parser.prog "obj(1,2,3,4,true);{obj: 1, obj2: 2}") with
             | Success (r,us,p)   -> 
                 match r with
                     | Fun ([], Block [Call (Ident "obj",[Int 1; Int 2; Int 3; Int 4; Bool true]); Object [("obj", Int 1); ("obj2", Int 2)]]) -> ()

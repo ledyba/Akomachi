@@ -17,6 +17,7 @@ type AST =
     | Call of AST * AST list
 
     | If of AST * AST * AST
+    | Loop of AST * AST * AST * AST
 
     | Uni of string * AST
     | Binary of AST * string * AST

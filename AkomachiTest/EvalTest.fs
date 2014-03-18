@@ -39,7 +39,7 @@ type EvalTest() =
       ()
     [<TestMethod>]
     member this.TestObj() =
-      match (run Parser.prog "var obj = {v->1, b->true}; if obj.b then 1 else 2") with
+      match (run Parser.prog "var obj = {v: 1, b: true}; if obj.b then 1 else 2") with
         | Success (r,us,p)   ->
              match Akomachi().dance r with
                 | (Value.Int 1) -> ()
@@ -60,12 +60,46 @@ type EvalTest() =
       ()
     [<TestMethod>]
     member this.TestSelf() =
-      match (run Parser.prog "var obj = { fn -> fun (x, y, z) self.x, x->1 }; obj.fn(1,2,3);") with
+      match (run Parser.prog "var obj = { fn : fun (x, y, z) self.x, x: 1 }; obj.fn(1,2,3);") with
         | Success (r,us,p)   ->
              match Akomachi().dance r with
                 | (Value.Int 1) -> ()
                 | x -> Assert.Fail(sprintf "%A" x)
         | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
       ()
+    [<TestMethod>]
+    member this.TestLoop() =
+      match (run Parser.prog "var x=0; for(var z=0;z<10;z=z+1) x=x+z; x") with
+        | Success (r,us,p)   ->
+             match Akomachi().dance r with
+                | (Value.Int 45) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      ()
+    [<TestMethod>]
+    member this.TestMath() =
+      match (run Parser.prog "Math.pi") with
+        | Success (r,us,p)   ->
+             match Akomachi().dance r with
+                | (Value.Float (System.Math.PI)) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      ()
+      match (run Parser.prog "Math.sin(0.0)") with
+        | Success (r,us,p)   ->
+             match Akomachi().dance r with
+                | (Value.Float (0.0)) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      ()
+      match (run Parser.prog "Math.abs(0.0)") with
+        | Success (r,us,p)   ->
+             match Akomachi().dance r with
+                | (Value.Float (0.0)) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      ()
+
+
 
 

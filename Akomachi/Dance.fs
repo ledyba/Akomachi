@@ -58,6 +58,7 @@ module Stage =
             regBinaryBool ">" (>) (>)
             regBinaryBool "<=" (<=) (<=)
             regBinaryBool "<" (<) (<)
+            globalObj.Add ("Math", NativeObject (NativeObjectWrapper (Akomachi.Builtin.Math()) ))
         let get (obj:Value) (name:string):Value =
             match obj with
                 | Int    i -> intP.Get name
@@ -66,7 +67,7 @@ module Stage =
                 | String s -> stringP.Get name
                 | Obj    obj -> obj.Item name
                 | Fun    (env, arglist, body) -> Null
-                | NativeObject obj -> Null
+                | NativeObject obj -> obj.Get name
                 | NativeFunc obj -> Null
                 | Null -> Null
         let set (obj:Value) (name:string) (v:Value):Value =
@@ -121,7 +122,7 @@ module Stage =
                             match fn with
                                 | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
                                 | Value.NativeFunc fn -> (fn (obj :: args))
-                                | _ -> raise (invalidArg "" "")
+                                | _ -> raise (invalidOp (sprintf "%A" fn))
                         | v ->
                             match (eval selfStack stack v) with
                                 | Value.Fun (env, arglist, fnast) ->
@@ -139,6 +140,8 @@ module Stage =
                         | (Bool true) -> eval selfStack stack thenAst
                         | (Bool false) -> eval selfStack stack elseAst
                         | v -> raise (invalidOp (sprintf "%A" v))
+                | AST.Loop (initAst, condAst, thenAst, doAst) ->
+                    evalLoop selfStack stack initAst condAst thenAst doAst
                 | AST.Uni (sym, valueAst) ->
                     let obj = eval selfStack stack valueAst
                     let fn = get obj sym
@@ -171,6 +174,17 @@ module Stage =
                     (List.head stack).Remove(name) |> ignore
                     (List.head stack).Add(name, obj)
                     obj
+        and evalLoop (selfStack:Value list) (scopeStack:AkObj list) (initAst:AST) (condAst:AST) (stepAst:AST) (doAst:AST) =
+            let rec loop (last:Value) =
+                    match eval selfStack scopeStack condAst with
+                        | (Bool false) -> last
+                        | (Bool true) ->
+                            let doRes = (eval selfStack scopeStack doAst)
+                            (eval selfStack scopeStack stepAst) |> ignore
+                            loop doRes
+                        | _ -> (raise (invalidOp "")) 
+            eval selfStack scopeStack initAst |> ignore
+            loop Null
         and evalList (selfStack:Value list) (scopeStack:AkObj list) (src:AST list) : Value =
             match src with
                 | it :: [] -> eval selfStack scopeStack it
