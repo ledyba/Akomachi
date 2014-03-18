@@ -31,7 +31,7 @@ true; false; //bool
 [1, 2, 3, "str"]; //list
 
 // オブジェクト記法
-var obj = {val1 -> 1, val2 -> true};
+var obj = {val1: 1, val2: true};
 obj.val2; // --> true
 ```
 
@@ -73,7 +73,7 @@ z; // --> 1
 self
 --------
 ```
-var obj = { fn -> fun (x, y, z) self.x, x->true };
+var obj = { fn: fun (x, y, z) self.x, x: true };
 obj.fn(1,2,3); // --> true つまり、selfの仕様はJSのthisと同じ
 
 var fn = fun (x, y, z) self;
