@@ -55,6 +55,7 @@
     <Compile Include="Value.fs" />
     <Compile Include="Builtin.fs" />
     <Compile Include="ValueHelper.fs" />
+    <Compile Include="Makimono.fs" />
     <Compile Include="Dance.fs" />
   </ItemGroup>
   <PropertyGroup>

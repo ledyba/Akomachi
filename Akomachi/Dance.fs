@@ -144,17 +144,4 @@ module Stage =
                 | it :: left :: xs -> eval selfStack scopeStack it |> ignore; evalList selfStack scopeStack (left :: xs)
                 | [] -> Null
         member self.dance (src:AST) = eval [] [globalObj] (AST.Call (src, []))
-        member self.save() =
-            let objSet = System.Collections.Generic.HashSet<obj>()
-            let rec walk (o: AkObj) =
-                if objSet.Add(o)
-                    then
-                      for key in o.Keys do
-                        let v = o.Item key
-                        match v with
-                            | Obj akobj -> if objSet.Add(v) then walk(akobj) else ()
-                            | NativeObject akobj -> objSet.Add(v) |> ignore
-                            | NativeFunc nativef -> objSet.Add(v) |> ignore
-                            | _ -> ()
-                    else ()
-            objSet
+        member self.save() = Makimono.save(globalObj)

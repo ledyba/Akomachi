@@ -19,14 +19,14 @@ module Builtin=
                 | [Float x; Float y] -> Float (fn1 x y)
                 | [Float x; Int y] -> Float (fn1 x (float y))
                 | [Int x; Int y] -> Int (fn2 x y)
-                | _ -> (raise (invalidOp ("You need two arguments for " + name)))
+                | _ -> (raise (invalidOp ("You need to pass two numerical arguments for " + name)))
         static member opBool name x y fn1 fn2 =
                       match [x;y] with
                        |  [Int x; Float y] -> Bool (fn1 (float x) y)
                        |  [Float x; Float y] -> Bool (fn1 x y)
                        |  [Float x; Int y] -> Bool (fn1 x (float y))
                        |  [Int x; Int y] -> Bool (fn2 x y)
-                       | _ -> (raise (invalidOp ("You need two arguments for " + name)))
+                       | _ -> (raise (invalidOp ("You need to pass two numerical arguments for " + name)))
         static member opAdd x y = Number.op "+" x y (+) (+)
         static member opSub x y = Number.op "-" x y (-) (-)
         static member opMul x y = Number.op "*" x y (*) (*)

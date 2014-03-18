@@ -123,3 +123,8 @@ module NativeHelper =
         else if (ty.GetMethod name) <> null then
             (raise (invalidOp "???"))
         else Null
+    let save spr =
+        let ty = spr.GetType()
+        let fn = ty.GetMethod "Save"
+        if not (fn.ReturnType.Equals(typeof<string>)) then (raise (invalidArg (ty.ToString()) "You need to Save method for saving")) else ()
+        if fn.IsStatic then fn.Invoke(null, List.toArray [spr]) else fn.Invoke(spr, null)
