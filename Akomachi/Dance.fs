@@ -6,65 +6,18 @@ open FParsec
 module Stage =
     type Akomachi ()=
         let globalObj = new AkObj()
-        let intP = new Provider<int>("Int provider")
-        let floatP = new Provider<float>("Float provider")
-        let boolP = new Provider<bool>("Bool provider")
-        let stringP = new Provider<string>("String provider")
+        let numP = new NativeObjectWrapper(new Builtin.Number());
+        let boolP = new NativeObjectWrapper(new Builtin.Bool());
+        let stringP = new NativeObjectWrapper(new Builtin.String())
         do
-            let regBinary name fn1 fn2 =
-                let natfn lst =
-                      match lst with
-                        | Int x :: Float y :: _ -> Float (fn1 (float x) y)
-                        | Float x :: Float y :: _ -> Float (fn1 x y)
-                        | Float x :: Int y :: _ -> Float (fn1 x (float y))
-                        | Int x :: Int y :: _ -> Int (fn2 x y)
-                        | _ -> (raise (invalidOp ("You need two arguments for " + name)))
-                intP.Set name (NativeFunc natfn) |> ignore
-                floatP.Set name (NativeFunc natfn) |> ignore
-            let regBinaryBool name fn1 fn2 =
-                let natfn lst =
-                      match lst with
-                       |  Int x :: Float y :: _ -> Bool (fn1 (float x) y)
-                       |  Float x :: Float y :: _ -> Bool (fn1 x y)
-                       |  Float x :: Int y :: _ -> Bool (fn1 x (float y))
-                       |  Int x :: Int y :: _ -> Bool (fn2 x y)
-                       | _ -> (raise (invalidOp ("You need two arguments for " + name)))
-                intP.Set name (NativeFunc natfn) |> ignore
-                floatP.Set name (NativeFunc natfn) |> ignore
             globalObj.Add("global", Obj globalObj)
-            regBinary "/" (/) (/)
-            regBinary "*" (*) (*)
-            regBinary "%" (%) (%)
-            regBinary "^" (fun x y -> System.Math.Pow(x,y)) pown
-            let regUniBin name fn1 fn2 fn3 fn4 =
-                    let fn lst =
-                        match lst with
-                            | Int x :: [] -> Int (fn1 x)
-                            | Float x :: [] -> Float (fn2 x)
-                            | Int x :: Int y :: [] -> Int (fn3 x y)
-                            | Int x :: Float y :: [] -> Float (fn4 (float x) y)
-                            | Float x :: Int y :: [] -> Float (fn4 x (float y))
-                            | Float x :: Float y :: [] -> Float (fn4 x y)
-                            | _ -> (raise (invalidOp ("You need two arguments for " + name)))
-                    intP.Set name (NativeFunc fn) |> ignore
-                    floatP.Set name (NativeFunc fn) |> ignore
-            regUniBin "+" id id (+) (+)
-            regUniBin "-" (fun x-> -x) (fun x-> -x) (-) (-)
-            intP.regFun ("~", (~~~))
-            boolP.regFun ("!", fun x -> not x)
-            regBinaryBool "==" (=) (=)
-            regBinaryBool "!=" (<>) (<>)
-            regBinaryBool ">=" (>=) (>=)
-            regBinaryBool ">" (>) (>)
-            regBinaryBool "<=" (<=) (<=)
-            regBinaryBool "<" (<) (<)
             globalObj.Add ("Math", NativeObject (NativeObjectWrapper (Akomachi.Builtin.Math()) ))
         let get (obj:Value) (name:string):Value =
             match obj with
-                | Int    i -> intP.Get name
-                | Float  f -> floatP.Get name
-                | Bool   b -> boolP.Get name
-                | String s -> stringP.Get name
+                | Int    i -> (numP :> AkNativeObject).Get name
+                | Float  f -> (numP :> AkNativeObject).Get name
+                | Bool   b -> (boolP :> AkNativeObject).Get name
+                | String s -> (stringP :> AkNativeObject).Get name
                 | Obj    obj -> obj.Item name
                 | Fun    (env, arglist, body) -> Null
                 | NativeObject obj -> obj.Get name
@@ -121,7 +74,7 @@ module Stage =
                             let fn = get obj name
                             match fn with
                                 | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
-                                | Value.NativeFunc fn -> (fn (obj :: args))
+                                | Value.NativeFunc (typ, fname) -> invokeNativeFunction typ fname obj args
                                 | _ -> raise (invalidOp (sprintf "%A" fn))
                         | v ->
                             match (eval selfStack stack v) with
@@ -133,7 +86,7 @@ module Stage =
                                     for (n,v) in List.zip arglist args do
                                         env.Add(n,v)
                                     eval (Null :: selfStack) (env :: stack) fnast
-                                | Value.NativeFunc fn -> (fn (Null :: args))
+                                | Value.NativeFunc (typ, fname) ->  invokeNativeFunction typ fname Null args
                                 | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
                 | AST.If (condAst, thenAst, elseAst) ->
                     match eval selfStack stack condAst with
@@ -147,7 +100,7 @@ module Stage =
                     let fn = get obj sym
                     match fn with
                         | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
-                        | Value.NativeFunc fn -> (fn [obj])
+                        | Value.NativeFunc (typ, fname) -> invokeNativeFunction typ fname obj []
                         | _ -> raise (invalidArg "" "")
                 | AST.Binary (val1ast, sym, val2ast) ->
                     let obj1 = eval selfStack stack val1ast
@@ -155,7 +108,7 @@ module Stage =
                     let fn = get obj1 sym
                     match fn with
                         | Value.Fun (env, arglist, fnast) -> eval (obj1 :: selfStack) ((inheritObj env) :: stack) fnast
-                        | Value.NativeFunc fn -> (fn [obj1; obj2])
+                        | Value.NativeFunc (typ, fname) ->  invokeNativeFunction typ fname obj1 [obj2]
                         | _ -> raise (invalidArg "" "")
                 | AST.Assign (val1ast, val2ast) ->
                     match val1ast with
@@ -191,4 +144,17 @@ module Stage =
                 | it :: left :: xs -> eval selfStack scopeStack it |> ignore; evalList selfStack scopeStack (left :: xs)
                 | [] -> Null
         member self.dance (src:AST) = eval [] [globalObj] (AST.Call (src, []))
-        
+        member self.save() =
+            let objSet = System.Collections.Generic.HashSet<obj>()
+            let rec walk (o: AkObj) =
+                if objSet.Add(o)
+                    then
+                      for key in o.Keys do
+                        let v = o.Item key
+                        match v with
+                            | Obj akobj -> if objSet.Add(v) then walk(akobj) else ()
+                            | NativeObject akobj -> objSet.Add(v) |> ignore
+                            | NativeFunc nativef -> objSet.Add(v) |> ignore
+                            | _ -> ()
+                    else ()
+            objSet

@@ -50,8 +50,21 @@ module ValueHelper =
         else if t.Equals(typeof<float>) then unbox<Value->'T> (box val2float)
         else if t.Equals(typeof<int>)   then unbox<Value->'T> (box val2string)
         else if t.Equals(typeof<bool>)   then unbox<Value->'T> (box val2bool)
-        else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)   then unbox<Value->'T> (box id)
+        else if t.Equals(typeof<unit>)   then unbox<Value->'T> (box (fun _ -> ()))
+        else if t.IsInstanceOfType(typeof<AkNativeObject>) then unbox<Value->'T> (box val2nativeobj)
+        else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
         else (raise (invalidOp "Unsupported"))
+    let unboxDynamic (v:Value) (to_type:System.Type) : obj =
+        let t = to_type
+        if      t.Equals(typeof<int>)   then (val2int v) :> obj
+        else if t.Equals(typeof<float>) then (val2float v) :> obj
+        else if t.Equals(typeof<int>)   then (val2string v) :> obj
+        else if t.Equals(typeof<bool>)   then (val2bool v) :> obj
+        else if t.Equals(typeof<unit>)   then () :> obj
+        else if  t.IsInstanceOfType(typeof<AkNativeObject>) then (val2nativeobj v) :> obj
+        else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then v :> obj
+        else (raise (invalidOp "Unsupported"))
+
     let inline boxFun<'T> : 'T -> Value =
         let t = typeof<'T>;
         if       t.Equals(typeof<int>)   then (unbox<'T->Value>  (box Int))
@@ -62,15 +75,6 @@ module ValueHelper =
         else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
         else if  t.IsInstanceOfType(typeof<AkNativeObject>) then (unbox<'T->Value>  (box NativeObject))
         else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
-    let rec unboxDynamic (v:Value) (to_type:System.Type) : obj =
-        let t = to_type
-        if      t.Equals(typeof<int>)   then (val2int v) :> obj
-        else if t.Equals(typeof<float>) then (val2float v) :> obj
-        else if t.Equals(typeof<int>)   then (val2string v) :> obj
-        else if t.Equals(typeof<bool>)   then (val2bool v) :> obj
-        else if  t.IsInstanceOfType(typeof<AkNativeObject>) then (val2nativeobj v) :> obj
-        else if t.Equals(typeof<Value>)   then v :> obj
-        else (raise (invalidOp "Unsupported"))
     let rec boxDynamic (v:obj) : Value =
         let t = v.GetType()
         if       t.Equals(typeof<int>)   then Int (v :?> int)
@@ -82,37 +86,29 @@ module ValueHelper =
         else if  t.IsInstanceOfType(typeof<AkNativeObject>) then NativeObject (v :?> AkNativeObject)
         else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
     let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
-type Provider<'a>(description:string) =
-    let dic = new System.Collections.Generic.Dictionary<string, Value>()
-    member self.ToString  = sprintf "Provider of %s" ((typeof<'a>).ToString())
-    member self.Get (name:string) = if dic.ContainsKey name then dic.Item name else Null
-    member self.Set (name:string) (value:Value) =
-        dic.Remove name |> ignore
-        dic.Add (name,value)
-    member self.regFunList (name:string, f: 'a list -> 'b ) : unit =
-        let castF = unboxFun<'a>
-        let boxF = boxFun<'b>
-        let nf:AkNativeFunc = fun xs -> boxF (f (List.map castF xs))
-        self.Set name (NativeFunc nf) |> ignore
-    member self.regFun (name:string, (f: 'a -> 'b)) : unit=
-        self.regFunList (name,
-            fun args->
-                match args with
-                    | a :: _ -> (f a)
-                    | _ -> raise (invalidOp ("You need two arguments for " + name))
-        )
-    member self.regFun (name:string, (f: 'a -> ' b -> 'c)) : unit=
-        let castFA = unboxFun<'a>
-        let castFB = unboxFun<'b>
-        let boxF = boxFun<'c>
-        let nf:AkNativeFunc =
-            fun xs ->
-                match xs with
-                    | a :: b :: _ -> boxF (f (castFA a) (castFB b))
-                    | _ -> raise (invalidOp ("You need three arguments for " + name))
-        self.Set name (NativeFunc nf) |> ignore
-type NativeObjectWrapper(spr : NativeObjectTrait) =
+    let invokeNativeFunction (ty:System.Type) (name:string) (self:Value) (args:Value list) =
+        let fn = ty.GetMethod name
+        let ps = List.map (fun (x:System.Reflection.ParameterInfo) -> x.ParameterType) (Array.toList (fn.GetParameters()))
+        if fn.IsStatic then
+            let v = fn.Invoke(null, List.toArray (List.map (fun (x,y) -> unboxDynamic x y) (List.zip (self::args) ps)))
+            boxDynamic ( v )
+        else
+            match self with
+               | NativeObject sobj -> boxDynamic (fn.Invoke(sobj, List.toArray (List.map (val2obj) args)))
+               | _ -> (raise (invalidOp ""))
+type NativeObjectWrapper(spr:obj) =
+  do assert (spr <> null)
   let ty = spr.GetType()
+  member self.spr = spr
+  member self.wrapFunc name =
+      let fn = ty.GetMethod name
+      let ps = List.map (fun (it:System.Reflection.ParameterInfo) -> (it.ParameterType)) (Array.toList (fn.GetParameters()));
+      fun lst ->
+           match lst with
+                | NativeObject o :: left ->
+                        let r = fn.Invoke((o :?> NativeObjectWrapper).spr, (List.toArray (List.map (fun (x,y) -> unboxDynamic x y) (List.zip left ps))))
+                        boxDynamic (r)
+                | _ -> (raise (invalidOp "???"))
   interface AkNativeObject with
     override self.ToString = spr.ToString()
     override self.Get name =
@@ -125,16 +121,7 @@ type NativeObjectWrapper(spr : NativeObjectTrait) =
             let v = p.GetValue(spr, null)
             boxDynamic v
         else if (ty.GetMethod name) <> null then
-            let fn = ty.GetMethod name
-            let ps = List.map (fun (it:System.Reflection.ParameterInfo) -> (it.ParameterType)) (Array.toList (fn.GetParameters()));
-
-            let f lst =
-                match lst with
-                    | _ :: left ->
-                            let r = fn.Invoke(spr, (List.toArray (List.map (fun (x,y) -> unboxDynamic x y) (List.zip left ps))))
-                            boxDynamic (r)
-                    | [] -> (raise (invalidOp "???"))
-            NativeFunc f
+            NativeFunc (ty, name)
         else Null
     override self.Set name v =
         if (ty.GetField name) <> null then
@@ -148,4 +135,4 @@ type NativeObjectWrapper(spr : NativeObjectTrait) =
         else if (ty.GetMethod name) <> null then
             (raise (invalidOp "???"))
         else Null
-    override self.Save = (^T : (member Save : string) spr:^T)
+    override self.Save = ""

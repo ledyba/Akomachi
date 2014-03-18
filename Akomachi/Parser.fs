@@ -92,27 +92,27 @@ module Parser =
     opp.TermParser <- (postFix.>> ws) <|> between (strws "(") (strws ")") expr
     opp.AddOperator(InfixOperator("=", ws, 1, Associativity.Right, fun x y -> Assign (x,y)))
 
-    opp.AddOperator(InfixOperator("^",  ws, 2, Associativity.Right, fun x y -> Binary (x, "^", y)))
+    opp.AddOperator(InfixOperator("^",  ws, 2, Associativity.Right, fun x y -> Binary (x, "opPow", y)))
 
-    opp.AddOperator(InfixOperator("==", ws, 3, Associativity.Right, fun x y -> Binary (x, "==", y)))
-    opp.AddOperator(InfixOperator("!=", ws, 3, Associativity.Right, fun x y -> Binary (x, "!=", y)))
+    opp.AddOperator(InfixOperator("==", ws, 3, Associativity.Right, fun x y -> Binary (x, "opEq", y)))
+    opp.AddOperator(InfixOperator("!=", ws, 3, Associativity.Right, fun x y -> Binary (x, "opNe", y)))
 
-    opp.AddOperator(InfixOperator(">",  ws, 4, Associativity.Right, fun x y -> Binary (x, ">", y)))
-    opp.AddOperator(InfixOperator(">=", ws, 4, Associativity.Right, fun x y -> Binary (x, ">=", y)))
-    opp.AddOperator(InfixOperator("<=", ws, 4, Associativity.Right, fun x y -> Binary (x, "<=", y)))
-    opp.AddOperator(InfixOperator("<",  ws, 4, Associativity.Right, fun x y -> Binary (x, "<", y)))
+    opp.AddOperator(InfixOperator(">",  ws, 4, Associativity.Right, fun x y -> Binary (x, "opGt", y)))
+    opp.AddOperator(InfixOperator(">=", ws, 4, Associativity.Right, fun x y -> Binary (x, "opGe", y)))
+    opp.AddOperator(InfixOperator("<=", ws, 4, Associativity.Right, fun x y -> Binary (x, "opLe", y)))
+    opp.AddOperator(InfixOperator("<",  ws, 4, Associativity.Right, fun x y -> Binary (x, "opLt", y)))
 
-    opp.AddOperator(InfixOperator("+", ws, 5, Associativity.Left, fun x y -> Binary (x, "+", y)))
-    opp.AddOperator(InfixOperator("-", ws, 5, Associativity.Left, fun x y -> Binary (x, "-", y)))
+    opp.AddOperator(InfixOperator("+", ws, 5, Associativity.Left, fun x y -> Binary (x, "opAdd", y)))
+    opp.AddOperator(InfixOperator("-", ws, 5, Associativity.Left, fun x y -> Binary (x, "opSub", y)))
 
-    opp.AddOperator(InfixOperator("*", ws, 6, Associativity.Left, fun x y -> Binary (x, "*", y)))
-    opp.AddOperator(InfixOperator("/", ws, 6, Associativity.Left, fun x y -> Binary (x, "/", y)))
-    opp.AddOperator(InfixOperator("%", ws, 6, Associativity.Left, fun x y -> Binary (x, "%", y)))
+    opp.AddOperator(InfixOperator("*", ws, 6, Associativity.Left, fun x y -> Binary (x, "opMul", y)))
+    opp.AddOperator(InfixOperator("/", ws, 6, Associativity.Left, fun x y -> Binary (x, "opDiv", y)))
+    opp.AddOperator(InfixOperator("%", ws, 6, Associativity.Left, fun x y -> Binary (x, "opMod", y)))
 
-    opp.AddOperator(PrefixOperator("-", ws, 7, true, fun x -> Uni ("-", x)))
-    opp.AddOperator(PrefixOperator("+", ws, 7, true, fun x -> Uni ("+", x)))
-    opp.AddOperator(PrefixOperator("!", ws, 7, true, fun x -> Uni ("!", x)))
-    opp.AddOperator(PrefixOperator("~", ws, 7, true, fun x -> Uni ("~", x)))
+    opp.AddOperator(PrefixOperator("-", ws, 7, true, fun x -> Uni ("opMinus", x)))
+    opp.AddOperator(PrefixOperator("+", ws, 7, true, fun x -> Uni ("opPlus", x)))
+    opp.AddOperator(PrefixOperator("!", ws, 7, true, fun x -> Uni ("opNot", x)))
+    opp.AddOperator(PrefixOperator("~", ws, 7, true, fun x -> Uni ("opComplement", x)))
     let expr2 =
         choice
             [(between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List);

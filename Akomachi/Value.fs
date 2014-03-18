@@ -8,7 +8,7 @@ type Value =
     | Obj    of AkObj
     | Fun    of AkFun
     | NativeObject  of AkNativeObject
-    | NativeFunc of AkNativeFunc
+    | NativeFunc of (System.Type * string)
     | Null
 and AkFun = AkObj * string list * AST
 and AkObj = System.Collections.Generic.Dictionary<string, Value>
@@ -19,6 +19,4 @@ and AkNativeObject = interface
     abstract member Set : string -> Value -> Value
     abstract member Save : string
     end
-and NativeObjectTrait = interface
-    abstract member Save :string
-    end;;
+;;

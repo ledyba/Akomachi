@@ -7,11 +7,12 @@ open FParsec
 [<EntryPoint>]
 let main argv = 
     let akomachi = Akomachi.Stage.Akomachi();
-    match (FParsec.CharParsers.run Akomachi.Parser.prog "Math.sin(1)") with
+    match (FParsec.CharParsers.run Akomachi.Parser.prog "var x=0; for(var z=0;z<10;z=z+1) x=x+z; x") with
       | Success (r,us,p)   ->
            match Akomachi().dance r with
               | (Value.Float x) -> (x = 0.0) |> ignore
               | x -> raise (invalidOp (sprintf "%A" x))
       | Failure (msg,err,us) -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null |> ignore
     printfn "%A" argv
+    let str = akomachi.save()
     0 // 整数の終了コードを返します
