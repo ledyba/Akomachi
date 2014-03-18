@@ -1,7 +1,8 @@
 ﻿namespace Akomachi
 
 module Builtin=
-    type Math()=
+    type Math(str:string)=
+        new() = Math("")
         static member pi = System.Math.PI
         static member sin (_:obj) x = System.Math.Sin(x)
         static member cos (_:obj) x = System.Math.Cos(x)
@@ -12,7 +13,8 @@ module Builtin=
                          | Float x -> (Float (System.Math.Abs x))
                          | _ -> (raise (invalidArg "" ""))
         member self.Save () : string = ""
-    type Number() =
+    type Number(str:string)=
+        new() = Number("")
         static member op name x y fn1 fn2 =
             match [x;y] with
                 | [Int x; Float y] -> Float (fn1 (float x) y)
@@ -53,12 +55,14 @@ module Builtin=
              | Int x -> (Int -x)
              | Float x -> (Float -x)
              | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
-    type Bool() =
+    type Bool(str:string) =
+        new() = Bool("")
         static  member opNot x =
           match x with
              | Bool x -> (Value.Bool (not x))
              | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
-    type String() =
+    type String(str:string) =
+        new() = String("")
         static  member opNot x =
           match x with
              | Bool x -> (Value.Bool (not x))

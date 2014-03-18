@@ -144,4 +144,4 @@ module Stage =
                 | it :: left :: xs -> eval selfStack scopeStack it |> ignore; evalList selfStack scopeStack (left :: xs)
                 | [] -> Null
         member self.dance (src:AST) = eval [] [globalObj] (AST.Call (src, []))
-        member self.save() = Makimono.save(globalObj)
+        member self.save() = Makimono.load( Makimono.save(globalObj) )
