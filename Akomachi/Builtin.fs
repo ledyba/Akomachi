@@ -11,3 +11,5 @@ module Builtin=
                          | Int x -> (Int (System.Math.Abs x))
                          | Float x -> (Float (System.Math.Abs x))
                          | _ -> (raise (invalidArg "" ""))
+        interface NativeObjectTrait with
+            override self.Save : string = ""

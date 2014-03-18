@@ -17,4 +17,8 @@ and AkNativeObject = interface
     abstract member ToString : string
     abstract member Get : string -> Value
     abstract member Set : string -> Value -> Value
+    abstract member Save : string
+    end
+and NativeObjectTrait = interface
+    abstract member Save :string
     end;;
