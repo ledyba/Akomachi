@@ -23,7 +23,7 @@ module ValueHelper =
             | String s -> s :> obj
             | Obj    obj -> obj :> obj
             | Fun    f -> f :> obj
-            | NativeObject x -> x :> obj
+            | NativeObject x -> x
             | NativeFunc f -> f :> obj
             | Null -> null
     let val2int v =
@@ -51,7 +51,7 @@ module ValueHelper =
         else if t.Equals(typeof<int>)   then unbox<Value->'T> (box val2string)
         else if t.Equals(typeof<bool>)   then unbox<Value->'T> (box val2bool)
         else if t.Equals(typeof<unit>)   then unbox<Value->'T> (box (fun _ -> ()))
-        else if t.IsInstanceOfType(typeof<AkNativeObject>) then unbox<Value->'T> (box val2nativeobj)
+        else if t.IsInstanceOfType(typeof<obj>) then unbox<Value->'T> (box val2nativeobj)
         else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
         else (raise (invalidOp "Unsupported"))
     let unboxDynamic (v:Value) (to_type:System.Type) : obj =
@@ -61,8 +61,8 @@ module ValueHelper =
         else if t.Equals(typeof<int>)   then (val2string v) :> obj
         else if t.Equals(typeof<bool>)   then (val2bool v) :> obj
         else if t.Equals(typeof<unit>)   then () :> obj
-        else if  t.IsInstanceOfType(typeof<AkNativeObject>) then (val2nativeobj v) :> obj
         else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then v :> obj
+        else if  t.IsInstanceOfType(typeof<obj>) then (val2nativeobj v)
         else (raise (invalidOp "Unsupported"))
 
     let inline boxFun<'T> : 'T -> Value =
@@ -73,7 +73,7 @@ module ValueHelper =
         else if  t.Equals(typeof<string>) then (unbox<'T->Value> (box String))
         else if  t.Equals(typeof<AkObj>) then (unbox<'T->Value>  (box Obj))
         else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
-        else if  t.IsInstanceOfType(typeof<AkNativeObject>) then (unbox<'T->Value>  (box NativeObject))
+        else if  t.IsInstanceOfType(typeof<obj>) then (unbox<'T->Value>  (box NativeObject))
         else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
     let rec boxDynamic (v:obj) : Value =
         let t = v.GetType()
@@ -83,10 +83,11 @@ module ValueHelper =
         else if  t.Equals(typeof<string>) then String (v :?> string)
         else if  t.Equals(typeof<AkObj>) then Obj  (v :?> AkObj)
         else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)  then v :?> Value
-        else if  t.IsInstanceOfType(typeof<AkNativeObject>) then NativeObject (v :?> AkNativeObject)
+        else if  t.IsInstanceOfType(typeof<obj>) then NativeObject (v)
         else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
     let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
-    let invokeNativeFunction (ty:System.Type) (name:string) (self:Value) (args:Value list) =
+module NativeHelper =
+    let invoke (ty:System.Type) (name:string) (self:Value) (args:Value list) =
         let fn = ty.GetMethod name
         let ps = List.map (fun (x:System.Reflection.ParameterInfo) -> x.ParameterType) (Array.toList (fn.GetParameters()))
         if fn.IsStatic then
@@ -96,22 +97,8 @@ module ValueHelper =
             match self with
                | NativeObject sobj -> boxDynamic (fn.Invoke(sobj, List.toArray (List.map (val2obj) args)))
                | _ -> (raise (invalidOp ""))
-type NativeObjectWrapper(spr:obj) =
-  do assert (spr <> null)
-  let ty = spr.GetType()
-  member self.spr = spr
-  member self.wrapFunc name =
-      let fn = ty.GetMethod name
-      let ps = List.map (fun (it:System.Reflection.ParameterInfo) -> (it.ParameterType)) (Array.toList (fn.GetParameters()));
-      fun lst ->
-           match lst with
-                | NativeObject o :: left ->
-                        let r = fn.Invoke((o :?> NativeObjectWrapper).spr, (List.toArray (List.map (fun (x,y) -> unboxDynamic x y) (List.zip left ps))))
-                        boxDynamic (r)
-                | _ -> (raise (invalidOp "???"))
-  interface AkNativeObject with
-    override self.ToString = spr.ToString()
-    override self.Get name =
+    let get spr name =
+        let ty = spr.GetType()
         if (ty.GetField name) <> null then
             let field = ty.GetField name
             let v = (field.GetValue(spr))
@@ -123,7 +110,8 @@ type NativeObjectWrapper(spr:obj) =
         else if (ty.GetMethod name) <> null then
             NativeFunc (ty, name)
         else Null
-    override self.Set name v =
+    let set spr name v =
+        let ty = spr.GetType()
         if (ty.GetField name) <> null then
             let field = ty.GetField name
             field.SetValue(spr, (val2obj v));
@@ -135,4 +123,3 @@ type NativeObjectWrapper(spr:obj) =
         else if (ty.GetMethod name) <> null then
             (raise (invalidOp "???"))
         else Null
-    override self.Save = ""

@@ -6,21 +6,21 @@ open FParsec
 module Stage =
     type Akomachi ()=
         let globalObj = new AkObj()
-        let numP = new NativeObjectWrapper(new Builtin.Number());
-        let boolP = new NativeObjectWrapper(new Builtin.Bool());
-        let stringP = new NativeObjectWrapper(new Builtin.String())
+        let numP = new Builtin.Number();
+        let boolP = new Builtin.Bool();
+        let stringP = new Builtin.String()
         do
             globalObj.Add("global", Obj globalObj)
-            globalObj.Add ("Math", NativeObject (NativeObjectWrapper (Akomachi.Builtin.Math()) ))
+            globalObj.Add ("Math", NativeObject (new Builtin.Math()) )
         let get (obj:Value) (name:string):Value =
             match obj with
-                | Int    i -> (numP :> AkNativeObject).Get name
-                | Float  f -> (numP :> AkNativeObject).Get name
-                | Bool   b -> (boolP :> AkNativeObject).Get name
-                | String s -> (stringP :> AkNativeObject).Get name
+                | Int    i -> NativeHelper.get numP name
+                | Float  f -> NativeHelper.get numP name
+                | Bool   b -> NativeHelper.get boolP name
+                | String s -> NativeHelper.get stringP name
                 | Obj    obj -> obj.Item name
                 | Fun    (env, arglist, body) -> Null
-                | NativeObject obj -> obj.Get name
+                | NativeObject obj -> NativeHelper.get obj name
                 | NativeFunc obj -> Null
                 | Null -> Null
         let set (obj:Value) (name:string) (v:Value):Value =
@@ -34,7 +34,7 @@ module Stage =
                     obj.Add(name, v);
                     Obj obj
                 | Fun    (env, arglist, body) -> Null
-                | NativeObject obj -> obj.Set name v
+                | NativeObject obj -> NativeHelper.set obj name v
                 | NativeFunc obj -> Null
                 | Null -> Null
         let inheritObj (obj : AkObj) =
@@ -74,7 +74,7 @@ module Stage =
                             let fn = get obj name
                             match fn with
                                 | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
-                                | Value.NativeFunc (typ, fname) -> invokeNativeFunction typ fname obj args
+                                | Value.NativeFunc (typ, fname) -> NativeHelper.invoke typ fname obj args
                                 | _ -> raise (invalidOp (sprintf "%A" fn))
                         | v ->
                             match (eval selfStack stack v) with
@@ -86,7 +86,7 @@ module Stage =
                                     for (n,v) in List.zip arglist args do
                                         env.Add(n,v)
                                     eval (Null :: selfStack) (env :: stack) fnast
-                                | Value.NativeFunc (typ, fname) ->  invokeNativeFunction typ fname Null args
+                                | Value.NativeFunc (typ, fname) ->  NativeHelper.invoke typ fname Null args
                                 | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
                 | AST.If (condAst, thenAst, elseAst) ->
                     match eval selfStack stack condAst with
@@ -100,7 +100,7 @@ module Stage =
                     let fn = get obj sym
                     match fn with
                         | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
-                        | Value.NativeFunc (typ, fname) -> invokeNativeFunction typ fname obj []
+                        | Value.NativeFunc (typ, fname) -> NativeHelper.invoke typ fname obj []
                         | _ -> raise (invalidArg "" "")
                 | AST.Binary (val1ast, sym, val2ast) ->
                     let obj1 = eval selfStack stack val1ast
@@ -108,7 +108,7 @@ module Stage =
                     let fn = get obj1 sym
                     match fn with
                         | Value.Fun (env, arglist, fnast) -> eval (obj1 :: selfStack) ((inheritObj env) :: stack) fnast
-                        | Value.NativeFunc (typ, fname) ->  invokeNativeFunction typ fname obj1 [obj2]
+                        | Value.NativeFunc (typ, fname) ->  NativeHelper.invoke typ fname obj1 [obj2]
                         | _ -> raise (invalidArg "" "")
                 | AST.Assign (val1ast, val2ast) ->
                     match val1ast with
