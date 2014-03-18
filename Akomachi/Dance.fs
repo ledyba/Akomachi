@@ -29,10 +29,10 @@ module Stage =
                 | Float  f -> Null
                 | Bool   b -> Null
                 | String s -> Null
-                | Obj    obj ->
-                    obj.Remove(name) |> ignore
-                    obj.Add(name, v);
-                    Obj obj
+                | Obj    o ->
+                    o.Remove(name) |> ignore
+                    o.Add(name, v);
+                    obj
                 | Fun    (env, arglist, body) -> Null
                 | NativeObject obj -> NativeHelper.set obj name v
                 | NativeFunc obj -> Null

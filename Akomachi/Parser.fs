@@ -69,13 +69,29 @@ module Parser =
     let internal accessOp = (strws ".") >>. ident
     let exprs = sepEndBy expr (strws ";")
     let block = between (strws "{") (strws "}") exprs
+
+    let internal func = ((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun
+    let internal obj_ = between (strws "{") (strws "}") (sepBy (ident .>> ws .>> strws ":" .>>. expr ) (strws ",")) |>> AST.Object
+    let internal list = between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List
+    let internal if_ = (tuple3 ((strws "if") >>. expr .>> (strws "then")) expr ((strws "else") >>. expr) ) |>> AST.If
+    let internal for_ = (tuple4 ((strws "for") >>. (strws "(") >>. expr .>> (strws ";")) (expr .>> (strws ";")) expr ((strws ")") >>. expr)) |>> AST.Loop
+
     let primary : Parser<AST, unit> =
-            numLiteral <|>
-            strLiteral <|>
-            boolLiteral <|>
-            nullLiteral <|>
-            selfLiteral <|>
-            identLiteral
+            choice
+                [func;
+                 attempt obj_;
+                 block |>> AST.Block;
+                 list;
+                 if_;
+                 for_;
+                 numLiteral;
+                 strLiteral;
+                 boolLiteral;
+                 nullLiteral;
+                 selfLiteral;
+                 identLiteral;
+                 between (strws "(") (strws ")") expr
+                 ]
     let postFixBase =
             primary >>= fun r ->
                 choice [
@@ -87,9 +103,10 @@ module Parser =
     let postFix =
             postFixBase >>= fun r ->
                 (callOp |>> fun x -> AST.Call (r,x)) <|> (indexOp |>> fun x -> AST.Index (r,x)) <|> preturn r
+    let expr0 = postFix .>> ws
     let opp = new FParsec.OperatorPrecedenceParser<AST,unit,unit>()
     let expr1 = opp.ExpressionParser
-    opp.TermParser <- (postFix.>> ws) <|> between (strws "(") (strws ")") expr
+    opp.TermParser <- expr0
     opp.AddOperator(InfixOperator("=", ws, 1, Associativity.Right, fun x y -> Assign (x,y)))
 
     opp.AddOperator(InfixOperator("^",  ws, 2, Associativity.Right, fun x y -> Binary (x, "opPow", y)))
@@ -113,15 +130,7 @@ module Parser =
     opp.AddOperator(PrefixOperator("+", ws, 7, true, fun x -> Uni ("opPlus", x)))
     opp.AddOperator(PrefixOperator("!", ws, 7, true, fun x -> Uni ("opNot", x)))
     opp.AddOperator(PrefixOperator("~", ws, 7, true, fun x -> Uni ("opComplement", x)))
-    let expr2 =
-        choice
-            [(between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List);
-             attempt (between (strws "{") (strws "}") (sepBy (ident .>> ws .>> strws ":" .>>. expr ) (strws ",")) |>> AST.Object);
-             (((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun);
-             ((tuple3 ((strws "if") >>. expr .>> (strws "then")) expr ((strws "else") >>. expr) ) |>> AST.If);
-             ((tuple4 ((strws "for") >>. (strws "(") >>. expr .>> (strws ";")) (expr .>> (strws ";")) expr ((strws ")") >>. expr)) |>> AST.Loop);
-             (block |>> AST.Block);
-             expr1 ]
-    let expr3 = ( (((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr2) |>> AST.Var) <|> expr2
-    do exprImpl := expr3
+    let expr2 = ( ( ((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr1) |>> AST.Var) <|> expr1
+                //expr2 >>= fun x -> ( (((preturn x .>> ws .>> strws "=") .>>. expr2) |>> AST.Assign ) <|> preturn x )
+    do exprImpl := expr2
     let prog = (ws >>. exprs .>> eof) |>> fun e -> AST.Fun ([], Block e)

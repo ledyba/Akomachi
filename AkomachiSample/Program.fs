@@ -7,9 +7,10 @@ open FParsec
 [<EntryPoint>]
 let main argv = 
     let akomachi = Akomachi.Stage.Akomachi();
-    match (FParsec.CharParsers.run Akomachi.Parser.prog "Math.sin(0)") with
+    let  v = (Akomachi.Value.Int 1) = (Akomachi.Value.Int 1);
+    match (FParsec.CharParsers.run Akomachi.Parser.prog "global.z = fun(x,y,z) { x+y+z }; Math.sin(0);") with
       | Success (r,us,p)   ->
-           match Akomachi().dance r with
+           match akomachi.dance r with
               | (Value.Float x) -> (x = 0.0) |> ignore
               | x -> raise (invalidOp (sprintf "%A" x))
       | Failure (msg,err,us) -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null |> ignore
