@@ -25,7 +25,18 @@ type EvalTest() =
                 | (Value.Int 3) -> ()
                 | x -> Assert.Fail(sprintf "%A" x)
         | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
-      
+      match (run Parser.prog "var z = (fun (x, y) {x+y})(1,2);") with
+        | Success (r,us,p)   ->
+             match Akomachi().dance r with
+                | (Value.Int 3) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
+      match (run Parser.prog "var z = {}; z.opApply = fun (x, y) {x+y}; z(1,2)") with
+        | Success (r,us,p)   ->
+             match Akomachi().dance r with
+                | (Value.Int 3) -> ()
+                | x -> Assert.Fail(sprintf "%A" x)
+        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
       ()
     [<TestMethod>]
     member this.TestIf() =

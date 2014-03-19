@@ -77,7 +77,8 @@ module Stage =
                                 | Value.NativeFunc (typ, fname) -> NativeHelper.invoke typ fname obj args
                                 | _ -> raise (invalidOp (sprintf "%A" fn))
                         | v ->
-                            match (eval selfStack stack v) with
+                            let recv = (eval selfStack stack v)
+                            match recv with
                                 | Value.Fun (env, arglist, fnast) ->
                                     if (List.length arglist <> List.length args ) then
                                             raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
@@ -87,6 +88,20 @@ module Stage =
                                         env.Add(n,v)
                                     eval (Null :: selfStack) (env :: stack) fnast
                                 | Value.NativeFunc (typ, fname) ->  NativeHelper.invoke typ fname Null args
+                                | Value.NativeObject o -> ( NativeHelper.invoke (o.GetType()) "opApply" recv args  )
+                                | Value.Obj o ->
+                                    let it = o.Item "opApply"
+                                    match it with
+                                        | Value.Fun (env, arglist, fast) ->
+                                            if (List.length arglist <> List.length args ) then
+                                                    raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
+                                                else ()
+                                            let env = (inheritObj env)
+                                            for (n,v) in List.zip arglist args do
+                                                env.Add(n,v)
+                                            eval (Null :: selfStack) (env :: stack) fast
+                                        | Value.NativeFunc (typ, fname) ->  NativeHelper.invoke typ fname Null ( recv :: args )
+                                        | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
                                 | v -> raise (invalidArg "ValueAST" (sprintf "%A" v))
                 | AST.If (condAst, thenAst, elseAst) ->
                     match eval selfStack stack condAst with
