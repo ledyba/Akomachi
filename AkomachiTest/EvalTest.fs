@@ -67,6 +67,17 @@ type EvalTest() =
       AssertRun (Value.Float (11.0*11.0*11.0*Math.Sqrt(11.0))) "11^3.5"
       AssertRun (Value.Float (11.5*11.5*11.5)) "11.5^3"
       AssertRun (Value.Int (11*11*11)) "11^3"
+
+      AssertRun (Value.Bool true) "11 > 3.0"
+      AssertRun (Value.Bool true) "11 >= 3.0"
+      AssertRun (Value.Bool true) "3 >= 3.0"
+      AssertRun (Value.Bool false) "3 > 3.0"
+
+      AssertRun (Value.Bool false) "11 < 3.0"
+      AssertRun (Value.Bool false) "11 <= 3.0"
+      AssertRun (Value.Bool true) "11 <= 13.0"
+      AssertRun (Value.Bool true) "3 <= 3.0"
+      AssertRun (Value.Bool false) "3 < 3.0"
     [<TestMethod>]
     member this.TestUniOperators() =
       AssertRun (Value.Int 1) "var z=1; +z;"
