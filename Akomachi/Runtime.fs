@@ -56,7 +56,7 @@ module Runtime =
         static member opSub x y = Number.op "-" x y (-) (-)
         static member opMul x y = Number.op "*" x y (*) (*)
         static member opDiv x y = Number.op "/" x y (/) (/)
-        static member opMod x y = Number.op "%" x y (/) (/)
+        static member opMod x y = Number.op "%" x y (%) (%)
         static member opPow x y = Number.op "^" x y (fun x y -> System.Math.Pow(x,y)) (pown)
         static member opEq x y = Number.opBool "==" x y (=) (=)
         static member opNe x y = Number.opBool "!=" x y (<>) (<>)
