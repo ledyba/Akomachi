@@ -180,6 +180,7 @@ ako.setGlobalObject("IntValue", 1);
 ako.setGlobalObject("FloatValue", 1.0);
 ako.setGlobalObject("BoolValue", true);
 ako.setGlobalObject("StringValue", "string");
-ako.setGlobalObject("NativeObject", new YourClass());
+ako.setGlobalObject("NativeObjectValue", new YourClass());
 ````
 登録したオブジェクトはグローバル変数として登録されます。
+ネイティブオブジェクトを登録し、それをセーブデータに含める場合、public String Save()というメソッドが必要です。
