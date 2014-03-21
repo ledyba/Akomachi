@@ -3,6 +3,7 @@
 open FParsec
 open Akomachi.Parser
 open Akomachi.Runtime
+open Akomachi.Exceptions
 
 (*******************************************************************)
 (* Mediator *)
@@ -56,7 +57,7 @@ type Akomachi (save:string)=
                                     then akobj
                                     else if akobj.ContainsKey "__proto__"
                                         then protoSearchV (akobj.Item "__proto__") name
-                                        else raise (invalidArg "" "")
+                                        else raise (PropertyNotFoundException (name, "Not found."))
     and protoSearchV (obj : Value) (name:string) =
                         match obj with
                             | Obj akobj -> protoSearch akobj name
@@ -85,13 +86,13 @@ type Akomachi (save:string)=
                         match fn with
                             | Value.Fun (env, arglist, fnast, _) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
                             | Value.NativeFunc (typ, fname) -> Native.invoke typ fname obj args
-                            | _ -> raise (invalidOp (sprintf "%A" fn))
+                            | _ -> raise (InvalidInvocationException (sprintf "Not a function: %A" fn))
                     | v ->
                         let recv = (eval selfStack stack v)
                         match recv with
                             | Value.Fun (env, arglist, fnast, _) ->
                                 if (List.length arglist <> List.length args ) then
-                                        raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
+                                        raise (InvalidInvocationException (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
                                     else ()
                                 let env = (inheritObj env)
                                 for (n,v) in List.zip arglist args do
@@ -104,7 +105,7 @@ type Akomachi (save:string)=
                                 match it with
                                     | Value.Fun (env, arglist, fast, _) ->
                                         if (List.length arglist <> List.length args ) then
-                                                raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
+                                                raise (InvalidInvocationException (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
                                             else ()
                                         let env = (inheritObj env)
                                         for (n,v) in List.zip arglist args do
@@ -117,7 +118,7 @@ type Akomachi (save:string)=
                 match eval selfStack stack condAst with
                     | (Bool true) -> eval selfStack stack thenAst
                     | (Bool false) -> eval selfStack stack elseAst
-                    | v -> raise (invalidOp (sprintf "%A" v))
+                    | v -> raise (TypeMismatchException (v.GetType(), sprintf "%A is not a bool value." v))
             | AST.Loop (initAst, condAst, thenAst, doAst) ->
                 evalLoop selfStack stack initAst condAst thenAst doAst
             | AST.Uni (sym, valueAst) ->
@@ -126,7 +127,7 @@ type Akomachi (save:string)=
                 match fn with
                     | Value.Fun (env, arglist, fnast, _) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
                     | Value.NativeFunc (typ, fname) -> Native.invoke typ fname obj []
-                    | _ -> raise (invalidArg "" "")
+                    | v -> raise (InvalidInvocationException (sprintf "%A is not a function." v))
             | AST.Binary (val1ast, sym, val2ast) ->
                 let obj1 = eval selfStack stack val1ast
                 let obj2 = eval selfStack stack val2ast
@@ -134,7 +135,7 @@ type Akomachi (save:string)=
                 match fn with
                     | Value.Fun (env, arglist, fnast, _) -> eval (obj1 :: selfStack) ((inheritObj env) :: stack) fnast
                     | Value.NativeFunc (typ, fname) ->  Native.invoke typ fname obj1 [obj2]
-                    | _ -> raise (invalidArg "" "")
+                    | v -> raise (InvalidInvocationException (sprintf "%A is not a function." v))
             | AST.Assign (val1ast, val2ast) ->
                 match val1ast with
                     | AST.Access (ast, name) ->
@@ -145,7 +146,7 @@ type Akomachi (save:string)=
                         let obj1 = protoSearch (List.head stack) name
                         let obj2 = eval selfStack stack val2ast
                         set (Obj obj1) name obj2
-                    | _ -> raise (invalidArg "" "")
+                    | v -> raise (InvalidAccessingException (sprintf "%A is not a Ident or Access AST" v))
             | AST.Fun (args, exprs, src) -> Value.Fun ((inheritObj (List.head stack)), args, exprs, src)
             | AST.Var (name, expr) ->
                 let obj = eval selfStack stack expr
@@ -160,7 +161,7 @@ type Akomachi (save:string)=
                         let doRes = (eval selfStack scopeStack doAst)
                         (eval selfStack scopeStack stepAst) |> ignore
                         loop doRes
-                    | _ -> (raise (invalidOp "")) 
+                    | v -> raise (TypeMismatchException (v.GetType(), sprintf "%A is not a bool value." v))
         eval selfStack scopeStack initAst |> ignore
         loop Null
     and evalList (selfStack:Value list) (scopeStack:AkObj list) (src:AST list) : Value =

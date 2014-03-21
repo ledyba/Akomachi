@@ -2,6 +2,7 @@
 
 open System
 open FParsec
+open Akomachi.Exceptions
 
 #nowarn "40"
 module Parser =
@@ -173,7 +174,7 @@ module Parser =
     let runOrThrow (str:string) =
         match run str with
              | Result.Success ast   -> ast
-             | Result.Error msg -> (raise (invalidOp (sprintf "Failed to parse: %s" msg)))
+             | Result.Error msg -> (raise (ParseException (sprintf "Failed to parse: %s" msg)))
     let runForFunc (src:string) =
         match runParserOnString func src "func" src with
              | ParserResult.Success (ast,us,p)   -> Result.Success ast

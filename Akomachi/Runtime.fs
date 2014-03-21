@@ -1,6 +1,7 @@
 ﻿namespace Akomachi
 
 open Akomachi.Parser
+open Akomachi.Exceptions
 
 module Runtime =
   (*******************************************************************)
@@ -43,14 +44,14 @@ module Runtime =
                 | [Float x; Float y] -> Float (fn1 x y)
                 | [Float x; Int y] -> Float (fn1 x (float y))
                 | [Int x; Int y] -> Int (fn2 x y)
-                | _ -> (raise (invalidOp ("You need to pass two numerical arguments for " + name)))
+                | _ -> (raise (InvalidArgumentException ("You need to pass two numerical arguments for " + name)))
         static member opBool name x y fn1 fn2 =
                       match [x;y] with
                        |  [Int x; Float y] -> Bool (fn1 (float x) y)
                        |  [Float x; Float y] -> Bool (fn1 x y)
                        |  [Float x; Int y] -> Bool (fn1 x (float y))
                        |  [Int x; Int y] -> Bool (fn2 x y)
-                       | _ -> (raise (invalidOp ("You need to pass two numerical arguments for " + name)))
+                       | _ -> (raise (InvalidArgumentException ("You need to pass two numerical arguments for " + name)))
         static member opAdd x y = Number.op "+" x y (+) (+)
         static member opSub x y = Number.op "-" x y (-) (-)
         static member opMul x y = Number.op "*" x y (*) (*)
@@ -66,29 +67,29 @@ module Runtime =
         static  member opComplement x =
           match x with
              | Int x -> ~~~x
-             | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
+             | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
         static  member opPlus x =
           match x with
              | Int x -> (Int x)
              | Float x -> (Float x)
-             | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
+             | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
         static  member opMinus x =
           match x with
              | Int x -> (Int -x)
              | Float x -> (Float -x)
-             | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
+             | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
     type Bool(str:string) =
         new() = Bool("")
         static  member opNot x =
           match x with
              | Bool x -> (Value.Bool (not x))
-             | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
+             | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
     type String(str:string) =
         new() = String("")
         static  member opNot x =
           match x with
              | Bool x -> (Value.Bool (not x))
-             | _ -> (raise (invalidArg ((x.GetType()).ToString()) "Type mismatch"))     
+             | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
   (*******************************************************************)
   (* Value Boxing/Unboxing *)
   (*******************************************************************)
@@ -118,20 +119,20 @@ module Runtime =
     match v with
       | Int i -> i
       | Float i -> (int i)
-      | _ -> raise (invalidOp (sprintf "%s cannot to be converted to int" (value2string v)))
+      | _ -> raise (InvalidCastException (sprintf "%s cannot to be converted to int" (value2string v)))
   let value2bool v =
     match v with
       | Bool i -> i
-      | _ -> raise (invalidOp (sprintf "%s cannot to be converted to bool" (value2string v)))
+      | _ -> raise (InvalidCastException (sprintf "%s cannot to be converted to bool" (value2string v)))
   let value2float v =
     match v with
       | Int i -> (float i)
       | Float i -> (i)
-      | _ -> raise (invalidOp (sprintf "%s cannot to be converted to float" (value2string v)))
+      | _ -> raise (InvalidCastException (sprintf "%s cannot to be converted to float" (value2string v)))
   let value2nativeobj v =
     match v with
       | NativeObject i -> (i)
-      | _ -> raise (invalidOp (sprintf "%s cannot to be converted to Native Object" (value2string v)))
+      | _ -> raise (InvalidCastException (sprintf "%s cannot to be converted to Native Object" (value2string v)))
   let inline unboxFun< 'T > : Value -> 'T =
       let t = typeof<('T)>
       if      t.Equals(typeof<int>)   then unbox<Value->'T> (box value2int)
@@ -141,7 +142,7 @@ module Runtime =
       else if t.Equals(typeof<unit>)   then unbox<Value->'T> (box (fun _ -> ()))
       else if t.IsInstanceOfType(typeof<obj>) then unbox<Value->'T> (box value2nativeobj)
       else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
-      else (raise (invalidOp "Unsupported"))
+      else (raise (UnsupportedUnboxingException (t, "Unsupported")))
   let unboxDynamic (v:Value) (to_type:System.Type) : obj =
       let t = to_type
       if      t.Equals(typeof<int>)   then (value2int v) :> obj
@@ -151,7 +152,7 @@ module Runtime =
       else if t.Equals(typeof<unit>)   then () :> obj
       else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then v :> obj
       else if  t.IsInstanceOfType(typeof<obj>) then (value2nativeobj v)
-      else (raise (invalidOp "Unsupported"))
+      else (raise (UnsupportedUnboxingException (t, "Unsupported")))
 
   let inline boxFun<'T> : 'T -> Value =
       let t = typeof<'T>;
@@ -162,7 +163,7 @@ module Runtime =
       else if  t.Equals(typeof<AkObj>) then (unbox<'T->Value>  (box Obj))
       else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
       else if  t.IsInstanceOfType(typeof<obj>) then (unbox<'T->Value>  (box NativeObject))
-      else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
+      else (raise (UnsupportedBoxingException (t, "Unsupported")))
   let rec boxDynamic (v:obj) : Value =
     if v = null then Null
     else
@@ -174,7 +175,7 @@ module Runtime =
       else if  t.Equals(typeof<AkObj>) then Obj  (v :?> AkObj)
       else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)  then v :?> Value
       else if  t.IsInstanceOfType(typeof<obj>) then NativeObject (v)
-      else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
+      else (raise (UnsupportedBoxingException (t, "Unsupported")))
   let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
   (*******************************************************************)
   (* Native binding Helpers *)
@@ -189,7 +190,7 @@ module Runtime =
           else
               match self with
                  | NativeObject sobj -> boxDynamic (fn.Invoke(sobj, List.toArray (List.map (value2obj) args)))
-                 | _ -> (raise (invalidOp ""))
+                 | _ -> (raise (TypeMismatchException (self.GetType(), "You must supply Native Object to invoke Native function.")))
       let get spr name =
           let ty = spr.GetType()
           if (ty.GetField name) <> null then
@@ -219,5 +220,5 @@ module Runtime =
       let save spr =
           let ty = spr.GetType()
           let fn = ty.GetMethod "Save"
-          if not (fn.ReturnType.Equals(typeof<string>)) then (raise (invalidArg (ty.ToString()) "You need to Save method for saving")) else ()
+          if not (fn.ReturnType.Equals(typeof<string>)) then raise (InvalidNativeObjectException (ty, "You need to Save method for saving")) else ()
           if fn.IsStatic then fn.Invoke(null, List.toArray [spr]) else fn.Invoke(spr, null)

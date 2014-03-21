@@ -4,6 +4,7 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Linq
 open Akomachi.Runtime
+open Akomachi.Exceptions
 
 module Makimono =
     let save (obj:AkObj) =
@@ -57,7 +58,7 @@ module Makimono =
                 ["NativeFunction"; typ.FullName; name]
             | Value.Fun (obj, args, ast, src) ->
                 ["Fun"; toListItem (Value.Obj obj); args; src ]
-            | _ -> (raise (invalidOp (sprintf "Unknwon data type: %A" x)))
+            | _ -> (raise (BrokenSavedataException (sprintf "Unknwon data type: %A" x)))
         walk(obj)
         JsonConvert.SerializeObject( Array.map toList (objSet.ToArray()) )
     let load (src:string)=
@@ -78,15 +79,16 @@ module Makimono =
                 let args = Array.map (fun (x:JToken) -> x.ToString()) ((lst.[2] :?> Newtonsoft.Json.Linq.JArray).ToArray())
                 let src = lst.[3] :?> string
                 let obj =
-                    match objs.Item objIdx with
+                    let v = objs.Item objIdx
+                    match v with
                       | (Value.Obj obj) -> obj
-                      | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
+                      | _ -> (raise (BrokenSavedataException (sprintf "Unknwon data type: %A" v)))
                 match Parser.runForFunc src with
                   | Parser.Result.Success (Parser.AST.Fun (args, expr, src))   ->
                         Value.Fun (obj, args, expr, src)
-                  | Parser.Result.Success _ -> raise (invalidOp (sprintf "Not a function: %s" src)); Value.Null
-                  | Parser.Result.Error msg -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null
-            | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
+                  | Parser.Result.Success _ -> raise (BrokenSavedataException (sprintf "Not a function: %s" src)); Value.Null
+                  | Parser.Result.Error msg -> raise (BrokenSavedataException (sprintf "Failed to parse: %s" msg)); Value.Null
+            | _ -> raise (BrokenSavedataException (sprintf "Unknown data: %A" lst))
 
         for obj in lst do
             objs.Add(spawner obj)
@@ -104,7 +106,7 @@ module Makimono =
             | "NativeObject" -> (objs.[(int (next:?>int64))])
             | "NativeFunc" -> (objs.[(int (next:?>int64))])
             | "Null" -> Null
-            | _ -> (raise (invalidArg (sprintf "%A" (List.head x)) "Unknwown"))
+            | _ -> raise (BrokenSavedataException (sprintf "Unknown data: %A" x))
         let inject (x:Value, y : obj []) =
           let head = y.[0] :?> string
           let left = List.tail (Array.toList y)
@@ -117,9 +119,8 @@ module Makimono =
                     ()
                 | NativeObject x -> ()
                 | NativeFunc _ -> ()
-                | Fun x ->
-                    ()
-                | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
+                | Fun x -> ()
+                | _ -> raise (BrokenSavedataException (sprintf "Unknown data: %A" lst))
           x
         Array.map inject (Array.zip (objs.ToArray()) lst) |> ignore
         objs.[0]
