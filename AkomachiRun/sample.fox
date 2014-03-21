@@ -1,2 +1,2 @@
 System.println("Hey");
-System.print("Hey?\n")
+System.print("Hey?\n");
