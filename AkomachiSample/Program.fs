@@ -16,4 +16,11 @@ let main argv =
       | Failure (msg,err,us) -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null |> ignore
     printfn "%A" argv
     let str = akomachi.save()
+    let ako = Akomachi.Stage.Akomachi(str);
+    match (Akomachi.Parser.run "z(1,2,3);") with
+      | Success (r,us,p)   ->
+           match ako.dance r with
+              | (Value.Int 6) -> ()
+              | x -> raise (invalidOp (sprintf "%A" x))
+      | Failure (msg,err,us) -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null |> ignore
     0 // 整数の終了コードを返します

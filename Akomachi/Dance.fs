@@ -4,14 +4,21 @@ open FParsec
 
 [<AutoOpen>]
 module Stage =
-    type Akomachi ()=
-        let globalObj = new AkObj()
+    type Akomachi (save:string)=
+        let globalObj =
+            if save = null
+                then new AkObj()
+                else match Makimono.load(save) with
+                        | Obj o -> o
+                        | _ -> new AkObj()
         let numP = new Builtin.Number();
         let boolP = new Builtin.Bool();
         let stringP = new Builtin.String()
         do
-            globalObj.Add("global", Obj globalObj)
-            globalObj.Add ("Math", NativeObject (new Builtin.Math()) )
+            if save = null then
+                globalObj.Add("global", Obj globalObj)
+                globalObj.Add ("Math", NativeObject (new Builtin.Math()) )
+            else ()
         let get (obj:Value) (name:string):Value =
             match obj with
                 | Int    i -> NativeHelper.get numP name
@@ -158,5 +165,6 @@ module Stage =
                 | it :: [] -> eval selfStack scopeStack it
                 | it :: left :: xs -> eval selfStack scopeStack it |> ignore; evalList selfStack scopeStack (left :: xs)
                 | [] -> Null
+        new() = Akomachi(null)
         member self.dance (src:AST) = eval [] [globalObj] (AST.Call (src, []))
-        member self.save() = Makimono.load( Makimono.save(globalObj) )
+        member self.save() = Makimono.save(globalObj)

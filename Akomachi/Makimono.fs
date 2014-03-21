@@ -82,8 +82,9 @@ module Makimono =
                       | (Value.Obj obj) -> obj
                       | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
                 match Parser.runForFunc src with
-                  | Success (r,us,p)   ->
-                        Value.Fun (obj, Array.toList args, r, src)
+                  | Success (AST.Fun (args, expr, src),us,p)   ->
+                        Value.Fun (obj, args, expr, src)
+                  | Success (_, _, _) -> raise (invalidOp (sprintf "Not a function: %s" src)); Value.Null
                   | Failure (msg,err,us) -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null
             | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
 
@@ -120,5 +121,5 @@ module Makimono =
                     ()
                 | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
           x
-        let v = Array.map inject (Array.zip (objs.ToArray()) lst)
-        v
+        Array.map inject (Array.zip (objs.ToArray()) lst) |> ignore
+        objs.[0]
