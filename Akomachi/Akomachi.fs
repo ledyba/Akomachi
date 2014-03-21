@@ -141,11 +141,13 @@ type Akomachi (save:string)=
                     | AST.Access (ast, name) ->
                         let obj1 = eval selfStack stack ast
                         let obj2 = eval selfStack stack val2ast
-                        set obj1 name obj2
+                        set obj1 name obj2 |> ignore
+                        obj2
                     | AST.Ident name ->
                         let obj1 = protoSearch (List.head stack) name
                         let obj2 = eval selfStack stack val2ast
-                        set (Obj obj1) name obj2
+                        set (Obj obj1) name obj2 |> ignore
+                        obj2
                     | v -> raise (InvalidAccessingException (sprintf "%A is not a Ident or Access AST" v))
             | AST.Fun (args, exprs, src) -> Value.Fun ((inheritObj (List.head stack)), args, exprs, src)
             | AST.Var (name, expr) ->

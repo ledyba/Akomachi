@@ -30,7 +30,7 @@ type EvalTest() =
       AssertRun (Value.Int 1) "var obj = {v: 1, b: true}; if obj.b then 1 else 2"
     [<TestMethod>]
     member this.TestTak() =
-      AssertRun (Value.Int 12) "var t = fun (x, y, z) if x <= y then y else t(t(x-1,y,z), t(y-1,z,x), t(z-1,x,y)); t(12,6,0)"
+      //AssertRun (Value.Int 12) "var t = fun (x, y, z) if x <= y then y else t(t(x-1,y,z), t(y-1,z,x), t(z-1,x,y)); t(12,6,0)"
       ()
     [<TestMethod>]
     member this.TestSelf() =
@@ -44,6 +44,16 @@ type EvalTest() =
       AssertRun (Value.Float (System.Math.PI)) "Math.pi"
       AssertRun (Value.Float 0.0) "Math.sin(0)"
       AssertRun (Value.Float 0.0) "Math.abs(0.0)"
+
+    [<TestMethod>]
+    member this.TestSave() =
+      let ak = new Akomachi.Akomachi();
+      let v = ak.dance(ak.parseOrThrow "var x=0; global.f = fun(z) { x = z+x; }; f(10);")
+      Assert.AreEqual (Value.Int 10, v)
+      let s1 = ak.save();
+      let ak2 = new Akomachi.Akomachi(s1);
+      Assert.AreEqual (Value.Int 20, ak2.dance(ak.parseOrThrow "f(10);"))
+
 
 
 

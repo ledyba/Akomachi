@@ -50,6 +50,7 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
+    <Compile Include="Exceptions.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Runtime.fs" />
     <Compile Include="Makimono.fs" />

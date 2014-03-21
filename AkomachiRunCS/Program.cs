@@ -28,7 +28,7 @@ namespace AkomachiRunCS
                 Akomachi.Parser.Result parseResult = ako.parse(src);
                 if( parseResult.IsSuccess ) {
                     Akomachi.Parser.Result.Success ast = (Akomachi.Parser.Result.Success)parseResult;
-                    ako.dance(ast.Item);
+                    Akomachi.Runtime.Value ret = ako.dance(ast.Item);
                 }else{
                     Akomachi.Parser.Result.Error err = (Akomachi.Parser.Result.Error)parseResult;
                     Console.WriteLine("Failed to parse: {0}", err.Item);
