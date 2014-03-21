@@ -19,7 +19,7 @@ module Stage =
                 | Bool   b -> NativeHelper.get boolP name
                 | String s -> NativeHelper.get stringP name
                 | Obj    obj -> obj.Item name
-                | Fun    (env, arglist, body) -> Null
+                | Fun    (env, arglist, body, _) -> Null
                 | NativeObject obj -> NativeHelper.get obj name
                 | NativeFunc obj -> Null
                 | Null -> Null
@@ -33,7 +33,7 @@ module Stage =
                     o.Remove(name) |> ignore
                     o.Add(name, v);
                     obj
-                | Fun    (env, arglist, body) -> Null
+                | Fun    (env, arglist, body, _) -> Null
                 | NativeObject obj -> NativeHelper.set obj name v
                 | NativeFunc obj -> Null
                 | Null -> Null
@@ -73,13 +73,13 @@ module Stage =
                             let obj = eval selfStack stack ast
                             let fn = get obj name
                             match fn with
-                                | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
+                                | Value.Fun (env, arglist, fnast, _) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
                                 | Value.NativeFunc (typ, fname) -> NativeHelper.invoke typ fname obj args
                                 | _ -> raise (invalidOp (sprintf "%A" fn))
                         | v ->
                             let recv = (eval selfStack stack v)
                             match recv with
-                                | Value.Fun (env, arglist, fnast) ->
+                                | Value.Fun (env, arglist, fnast, _) ->
                                     if (List.length arglist <> List.length args ) then
                                             raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
                                         else ()
@@ -92,7 +92,7 @@ module Stage =
                                 | Value.Obj o ->
                                     let it = o.Item "opApply"
                                     match it with
-                                        | Value.Fun (env, arglist, fast) ->
+                                        | Value.Fun (env, arglist, fast, _) ->
                                             if (List.length arglist <> List.length args ) then
                                                     raise (invalidOp (sprintf "Argument length does not match: %d vs %d" (List.length arglist) (List.length args)))
                                                 else ()
@@ -114,7 +114,7 @@ module Stage =
                     let obj = eval selfStack stack valueAst
                     let fn = get obj sym
                     match fn with
-                        | Value.Fun (env, arglist, fnast) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
+                        | Value.Fun (env, arglist, fnast, _) -> eval (obj :: selfStack) ((inheritObj env) :: stack) fnast
                         | Value.NativeFunc (typ, fname) -> NativeHelper.invoke typ fname obj []
                         | _ -> raise (invalidArg "" "")
                 | AST.Binary (val1ast, sym, val2ast) ->
@@ -122,7 +122,7 @@ module Stage =
                     let obj2 = eval selfStack stack val2ast
                     let fn = get obj1 sym
                     match fn with
-                        | Value.Fun (env, arglist, fnast) -> eval (obj1 :: selfStack) ((inheritObj env) :: stack) fnast
+                        | Value.Fun (env, arglist, fnast, _) -> eval (obj1 :: selfStack) ((inheritObj env) :: stack) fnast
                         | Value.NativeFunc (typ, fname) ->  NativeHelper.invoke typ fname obj1 [obj2]
                         | _ -> raise (invalidArg "" "")
                 | AST.Assign (val1ast, val2ast) ->
@@ -136,7 +136,7 @@ module Stage =
                             let obj2 = eval selfStack stack val2ast
                             set (Obj obj1) name obj2
                         | _ -> raise (invalidArg "" "")
-                | AST.Fun (args, exprs) -> Value.Fun ((inheritObj (List.head stack)), args, exprs)
+                | AST.Fun (args, exprs, src) -> Value.Fun ((inheritObj (List.head stack)), args, exprs, src)
                 | AST.Var (name, expr) ->
                     let obj = eval selfStack stack expr
                     (List.head stack).Remove(name) |> ignore

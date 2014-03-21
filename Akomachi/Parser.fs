@@ -14,7 +14,7 @@ module Parser =
                        ||| NumberLiteralOptions.AllowExponent
                        ||| NumberLiteralOptions.AllowHexadecimal
                        ||| NumberLiteralOptions.AllowInfinity
-    let numLiteral : Parser<AST, unit> =
+    let numLiteral =
         numberLiteral numberFormat "number"
         |>> fun p ->
                 if p.IsInteger then Int (int p.String)
@@ -23,7 +23,7 @@ module Parser =
     // Copyright (c) Stephan Tolksdorf 2008-2011
     // License: Simplified BSD License. See accompanying documentation.
     let internal str s = pstring s
-    let strLiteral : Parser<AST, unit> =
+    let strLiteral =
         let escape =  anyOf "\"\\/bfnrt"
                       |>> function
                           | 'b' -> "\b"
@@ -44,7 +44,7 @@ module Parser =
                 (stringsSepBy (manySatisfy (fun c -> c <> '"' && c <> '\\'))
                               (str "\\" >>. (escape <|> unicodeEscape)))
         |>> AST.String
-    let boolLiteral : Parser<AST, unit>
+    let boolLiteral
         = (stringReturn "true" true <|> stringReturn "false" false) |>> AST.Bool
     let internal isAsciiIdStart c    = isAsciiLetter c
     let internal isAsciiIdContinue c = isAsciiLetter c || isDigit c
@@ -54,8 +54,8 @@ module Parser =
                                      allowAllNonAsciiCharsInPreCheck = true,
                                      normalization = System.Text.NormalizationForm.FormKC,
                                      normalizeBeforeValidation = true)
-    let internal ident : Parser<string, unit> = (identifier optsWithPreCheck)
-    let identLiteral : Parser<AST, unit> = ident |>> AST.Ident
+    let internal ident = (identifier optsWithPreCheck)
+    let identLiteral = ident |>> AST.Ident
     let nullLiteral = stringReturn "null" AST.Null
     let selfLiteral = stringReturn "self" AST.Self
     (*******************************************************************)
@@ -70,13 +70,13 @@ module Parser =
     let exprs = sepEndBy expr (strws ";")
     let block = between (strws "{") (strws "}") exprs
 
-    let internal func = ((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) ) .>>. expr) |>> AST.Fun
+    let internal func = tuple5 getUserState getPosition ((strws "fun") >>. ( between (strws "(") (strws ")") (sepBy ident (strws ",")) )) expr  getPosition |>> fun (src:string, p1, args, e, p2) -> AST.Fun (args, e, src.Substring(int p1.Index, int (p2.Index-p1.Index)))
     let internal obj_ = between (strws "{") (strws "}") (sepBy (ident .>> ws .>> strws ":" .>>. expr ) (strws ",")) |>> AST.Object
     let internal list = between (strws "[") (strws "]") (sepBy expr (strws ",")) |>> AST.List
     let internal if_ = (tuple3 ((strws "if") >>. expr .>> (strws "then")) expr ((strws "else") >>. expr) ) |>> AST.If
     let internal for_ = (tuple4 ((strws "for") >>. (strws "(") >>. expr .>> (strws ";")) (expr .>> (strws ";")) expr ((strws ")") >>. expr)) |>> AST.Loop
 
-    let primary : Parser<AST, unit> =
+    let primary =
             choice
                 [func;
                  attempt obj_;
@@ -104,7 +104,7 @@ module Parser =
             postFixBase >>= fun r ->
                 (callOp |>> fun x -> AST.Call (r,x)) <|> (indexOp |>> fun x -> AST.Index (r,x)) <|> preturn r
     let expr0 = postFix .>> ws
-    let opp = new FParsec.OperatorPrecedenceParser<AST,unit,unit>()
+    let opp = new FParsec.OperatorPrecedenceParser<AST,_,_>()
     let expr1 = opp.ExpressionParser
     opp.TermParser <- expr0
     opp.AddOperator(InfixOperator("=", ws, 1, Associativity.Right, fun x y -> Assign (x,y)))
@@ -133,4 +133,7 @@ module Parser =
     let expr2 = ( ( ((strws "var") >>. ident .>> (ws >>. strws "=")) .>>. expr1) |>> AST.Var) <|> expr1
                 //expr2 >>= fun x -> ( (((preturn x .>> ws .>> strws "=") .>>. expr2) |>> AST.Assign ) <|> preturn x )
     do exprImpl := expr2
-    let prog = (ws >>. exprs .>> eof) |>> fun e -> AST.Fun ([], Block e)
+    let prog = (ws >>. (tuple4 getUserState getPosition exprs getPosition) .>> eof) |>> fun (src:string, l1,e,l2) -> AST.Fun ([], Block e, "fun(){" + src.Substring(int l1.Index, int (l2.Index-l1.Index))+";}")
+
+    let run (str:string) = runParserOnString prog str "fname" str
+    let runForFunc (src:string) = runParserOnString func src "func" src

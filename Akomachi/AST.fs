@@ -23,5 +23,5 @@ type AST =
     | Binary of AST * string * AST
     | Assign of AST * AST
 
-    | Fun of string list * AST
+    | Fun of string list * AST * string
     | Var of string * AST

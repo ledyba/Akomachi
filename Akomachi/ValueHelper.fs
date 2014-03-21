@@ -11,7 +11,7 @@ module ValueHelper =
             | Bool   b -> (string b)
             | String s -> s
             | Obj    obj -> (sprintf "<<Pure Obj: %A>>" obj)
-            | Fun    (env, arglist, body) -> (sprintf "Fun %A -> %A" arglist body)
+            | Fun    (env, arglist, body, src) -> (sprintf "Fun %s" src)
             | NativeObject x -> sprintf "<<Native Object: %A>>" x
             | NativeFunc f -> sprintf "<<Native Fun>>: %A" f
             | Null -> "<<null>>"
