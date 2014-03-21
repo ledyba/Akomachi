@@ -17,10 +17,11 @@ let main argv =
         match akomachi.parse src with
             | Akomachi.Parser.Success ast ->
                 let v = akomachi.dance ast
-                0 // 整数の終了コードを返します
+                0
             | Akomachi.Parser.Error err ->
                 printfn "Failed to parse: %s" err
                 -1
     else
         printfn "Usage: %s <src>"  System.AppDomain.CurrentDomain.FriendlyName
         0
+

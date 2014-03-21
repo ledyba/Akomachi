@@ -111,8 +111,12 @@ namespace AkomachiRunCS
                 String src = stream.ReadToEnd();
                 Akomachi.Parser.Result parseResult = ako.parse(src);
                 if( parseResult.IsSuccess ) {
-                    Akomachi.Parser.Result.Success ast = (Akomachi.Parser.Result.Success)parseResult;
-                    ako.dance(ast.Item);
+                    Akomachi.Parser.Result.Success succ = (Akomachi.Parser.Result.Success)parseResult;
+                    ako.dance(succ.Item);
+					// or
+					// Akomachi.Parser ast = ako.parseOrThrow(src);
+					// ako.dance(ast);
+					// この時、パースエラーの時は例外を投げます。
                 }else{
                     Akomachi.Parser.Result.Error err = (Akomachi.Parser.Result.Error)parseResult;
                     Console.WriteLine("Failed to parse: {0}", err.Item);
@@ -155,3 +159,27 @@ let main argv =
         printfn "Usage: %s <src>"  System.AppDomain.CurrentDomain.FriendlyName
         0
 ````
+
+セーブの仕方
+------------------
+### C#
+````
+// セーブデータはStringです。
+String savedata = ako.save();
+// コンストラクタに指定すると、読み込みます。
+Akomachi.Akomachi new_ako = new Akomachi.Akomachi(savedata);
+// 以下続行
+````
+
+オブジェクトの登録
+------------------
+### C#
+
+````
+ako.setGlobalObject("IntValue", 1);
+ako.setGlobalObject("FloatValue", 1.0);
+ako.setGlobalObject("BoolValue", true);
+ako.setGlobalObject("StringValue", "string");
+ako.setGlobalObject("NativeObject", new YourClass());
+````
+登録したオブジェクトはグローバル変数として登録されます。
