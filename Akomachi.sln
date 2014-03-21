@@ -7,8 +7,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Akomachi", "Akomachi\Akomac
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AkomachiTest", "AkomachiTest\AkomachiTest.fsproj", "{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkomachiCS", "AkomachiCS\AkomachiCS.csproj", "{22221760-362E-4EE2-A072-FD4571027C17}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AkomachiSample", "AkomachiSample\AkomachiSample.fsproj", "{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}"
 EndProject
 Global
@@ -25,10 +23,6 @@ Global
 		{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{22221760-362E-4EE2-A072-FD4571027C17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{22221760-362E-4EE2-A072-FD4571027C17}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{22221760-362E-4EE2-A072-FD4571027C17}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{22221760-362E-4EE2-A072-FD4571027C17}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Release|Any CPU.ActiveCfg = Release|Any CPU

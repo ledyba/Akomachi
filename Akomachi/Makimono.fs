@@ -3,8 +3,7 @@
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System.Linq
-open Microsoft.FSharp.Linq
-open FParsec
+open Akomachi.Runtime
 
 module Makimono =
     let save (obj:AkObj) =
@@ -53,11 +52,12 @@ module Makimono =
                     d.Add(k, toListItem (akobj.Item k))
                 ["Obj"; d]
             | Value.NativeObject natobj ->
-                ["NativeObject"; natobj.GetType().FullName; NativeHelper.save natobj]
+                ["NativeObject"; natobj.GetType().FullName; Native.save natobj]
             | Value.NativeFunc (typ, name) ->
                 ["NativeFunction"; typ.FullName; name]
             | Value.Fun (obj, args, ast, src) ->
                 ["Fun"; toListItem (Value.Obj obj); args; src ]
+            | _ -> (raise (invalidOp (sprintf "Unknwon data type: %A" x)))
         walk(obj)
         JsonConvert.SerializeObject( Array.map toList (objSet.ToArray()) )
     let load (src:string)=
@@ -82,10 +82,10 @@ module Makimono =
                       | (Value.Obj obj) -> obj
                       | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
                 match Parser.runForFunc src with
-                  | Success (AST.Fun (args, expr, src),us,p)   ->
+                  | Parser.Result.Success (Parser.AST.Fun (args, expr, src))   ->
                         Value.Fun (obj, args, expr, src)
-                  | Success (_, _, _) -> raise (invalidOp (sprintf "Not a function: %s" src)); Value.Null
-                  | Failure (msg,err,us) -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null
+                  | Parser.Result.Success _ -> raise (invalidOp (sprintf "Not a function: %s" src)); Value.Null
+                  | Parser.Result.Error msg -> raise (invalidOp (sprintf "Failed to parse: %s" msg)); Value.Null
             | _ -> (raise (invalidArg (sprintf "%A" (lst.[0])) "Unknwown"))
 
         for obj in lst do

@@ -50,7 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EvalTest.fs" />
-    <Compile Include="ParserTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Akomachi\Akomachi.fsproj">

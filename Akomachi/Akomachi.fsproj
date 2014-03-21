@@ -50,13 +50,10 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
-    <Compile Include="AST.fs" />
     <Compile Include="Parser.fs" />
-    <Compile Include="Value.fs" />
-    <Compile Include="Builtin.fs" />
-    <Compile Include="ValueHelper.fs" />
+    <Compile Include="Runtime.fs" />
     <Compile Include="Makimono.fs" />
-    <Compile Include="Dance.fs" />
+    <Compile Include="Akomachi.fs" />
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>

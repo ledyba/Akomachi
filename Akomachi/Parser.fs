@@ -6,6 +6,34 @@ open FParsec
 #nowarn "40"
 module Parser =
     (*******************************************************************)
+    (* AST *)
+    (*******************************************************************)
+    type AST =
+          Int of int
+        | Float of float
+        | String of string
+        | Bool of bool
+        | Null
+        | Object of (string * AST) list
+        | List of AST list
+        | Block of AST list
+        | Ident of string
+        | Self
+
+        | Access of AST * string
+        | Index of AST * AST
+        | Call of AST * AST list
+
+        | If of AST * AST * AST
+        | Loop of AST * AST * AST * AST
+
+        | Uni of string * AST
+        | Binary of AST * string * AST
+        | Assign of AST * AST
+
+        | Fun of string list * AST * string
+        | Var of string * AST
+    (*******************************************************************)
     (* Literals *)
     (*******************************************************************)
     let internal numberFormat = 
@@ -135,5 +163,18 @@ module Parser =
     do exprImpl := expr2
     let prog = (ws >>. (tuple4 getUserState getPosition exprs getPosition) .>> eof) |>> fun (src:string, l1,e,l2) -> AST.Fun ([], Block e, "fun(){" + src.Substring(int l1.Index, int (l2.Index-l1.Index))+";}")
 
-    let run (str:string) = runParserOnString prog str "fname" str
-    let runForFunc (src:string) = runParserOnString func src "func" src
+    type Result =
+        | Success of AST
+        | Error of string
+    let run (str:string) =
+        match runParserOnString prog str "body" str with
+             | ParserResult.Success (ast,us,p)   -> Result.Success ast
+             | ParserResult.Failure (msg,err,us) -> Result.Error (sprintf "Failed to parse: %s" msg)
+    let runOrThrow (str:string) =
+        match run str with
+             | Result.Success ast   -> ast
+             | Result.Error msg -> (raise (invalidOp (sprintf "Failed to parse: %s" msg)))
+    let runForFunc (src:string) =
+        match runParserOnString func src "func" src with
+             | ParserResult.Success (ast,us,p)   -> Result.Success ast
+             | ParserResult.Failure (msg,err,us) -> Result.Error (sprintf "Failed to parse: %s" msg)
