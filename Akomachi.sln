@@ -7,7 +7,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Akomachi", "Akomachi\Akomac
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AkomachiTest", "AkomachiTest\AkomachiTest.fsproj", "{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AkomachiSample", "AkomachiSample\AkomachiSample.fsproj", "{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AkomachiRun", "AkomachiRun\AkomachiRun.fsproj", "{862F8AD5-575F-4630-8DD9-93359E2B7679}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{359034C1-F5F3-4A09-9FA8-9F28ACEF349F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6FC3AE4E-70E1-4A7B-899E-70E0E451E8FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{862F8AD5-575F-4630-8DD9-93359E2B7679}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{862F8AD5-575F-4630-8DD9-93359E2B7679}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{862F8AD5-575F-4630-8DD9-93359E2B7679}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{862F8AD5-575F-4630-8DD9-93359E2B7679}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

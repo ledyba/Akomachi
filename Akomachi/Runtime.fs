@@ -164,6 +164,8 @@ module Runtime =
       else if  t.IsInstanceOfType(typeof<obj>) then (unbox<'T->Value>  (box NativeObject))
       else raise (invalidOp (sprintf "Unsupported type: %s" (t.ToString())))
   let rec boxDynamic (v:obj) : Value =
+    if v = null then Null
+    else
       let t = v.GetType()
       if       t.Equals(typeof<int>)   then Int (v :?> int)
       else if  t.Equals(typeof<float>) then Float (v :?> float)

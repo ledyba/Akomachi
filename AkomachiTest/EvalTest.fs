@@ -30,14 +30,7 @@ type EvalTest() =
       AssertRun (Value.Int 1) "var obj = {v: 1, b: true}; if obj.b then 1 else 2"
     [<TestMethod>]
     member this.TestTak() =
-      (*
-      match (run Parser.prog "var t = fun (x, y, z) if x <= y then y else t(t(x-1,y,z), t(y-1,z,x), t(z-1,x,y)); t(12,6,0)") with
-        | Success (r,us,p)   ->
-             match Akomachi().dance r with
-                | (Value.Int 12) -> ()
-                | x -> Assert.Fail(sprintf "%A" x)
-        | Failure (msg,err,us) -> Assert.Fail(sprintf "Failed to parse: %s" msg); Value.Null |> ignore
-      *)
+      AssertRun (Value.Int 12) "var t = fun (x, y, z) if x <= y then y else t(t(x-1,y,z), t(y-1,z,x), t(z-1,x,y)); t(12,6,0)"
       ()
     [<TestMethod>]
     member this.TestSelf() =
