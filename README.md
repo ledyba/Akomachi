@@ -162,7 +162,7 @@ let main argv =
 
 セーブの仕方
 ------------------
-### C#
+### C&#35;
 ````
 // セーブデータはStringです。
 String savedata = ako.save();
@@ -173,7 +173,7 @@ Akomachi.Akomachi new_ako = new Akomachi.Akomachi(savedata);
 
 オブジェクトの登録
 ------------------
-### C#
+### C&#35;
 
 ````
 ako.setGlobalObject("IntValue", 1);
