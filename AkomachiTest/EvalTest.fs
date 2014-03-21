@@ -78,6 +78,8 @@ type EvalTest() =
       AssertRun (Value.Bool true) "11 <= 13.0"
       AssertRun (Value.Bool true) "3 <= 3.0"
       AssertRun (Value.Bool false) "3 < 3.0"
+
+      AssertRun (Value.String "testabcd") "\"test\"+\"abcd\""
     [<TestMethod>]
     member this.TestUniOperators() =
       AssertRun (Value.Int 1) "var z=1; +z;"
@@ -103,6 +105,13 @@ type EvalTest() =
       Assert.AreEqual (Value.Int 20, ak2.dance(ak.parseOrThrow "f(10);"))
       let ak3 = new Akomachi.Akomachi(ak2.save());
       Assert.AreEqual (Value.Int 30, ak2.dance(ak.parseOrThrow "f(10);"))
+
+    [<TestMethod>]
+    member this.TestGCD() =
+      let ak = new Akomachi.Akomachi();
+      Assert.AreEqual (Value.Int 5, ak.dance(ak.parseOrThrow "global.gcd=fun(n,m) if (n == 0) then m else gcd(m%n, n); gcd(45, 100); ") )
+      Assert.AreEqual (Value.Int 1, ak.dance(ak.parseOrThrow "gcd(11, 200); ") )
+
 
 
 

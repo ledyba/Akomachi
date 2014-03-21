@@ -86,9 +86,9 @@ module Runtime =
              | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
     type String(str:string) =
         new() = String("")
-        static  member opNot x =
-          match x with
-             | Bool x -> (Value.Bool (not x))
+        static  member opAdd x y =
+          match (x,y) with
+             | (String x, String y) -> (Value.String (x+y))
              | _ -> raise (TypeMismatchException (x.GetType(), "Type mismatch"))
   (*******************************************************************)
   (* Value Boxing/Unboxing *)
