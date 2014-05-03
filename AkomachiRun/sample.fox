@@ -1,2 +1,3 @@
+var x=0; global.f = fun(z) { x = z+x; }; f(10);
 System.println("Hey");
 System.print("Hey?\n");

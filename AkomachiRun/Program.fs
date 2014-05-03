@@ -6,6 +6,7 @@ open Akomachi
 type System()=
     member self.println(s:string) = printfn "%s" s
     member self.print(s:string) = printf "%s" s
+    member self.Save() = ""
 
 [<EntryPoint>]
 let main argv = 
