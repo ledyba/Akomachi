@@ -5,14 +5,15 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>ba6bb405-612b-4aed-a063-7711dc6e492c</ProjectGuid>
+    <ProjectGuid>7089ce5e-5eab-4511-b0f6-0c6ccc80d1d2</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Akomachi</RootNamespace>
     <AssemblyName>Akomachi</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <TargetFSharpCoreVersion>2.3.0.0</TargetFSharpCoreVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <TargetProfile>netcore</TargetProfile>
+    <TargetFSharpCoreVersion>3.3.1.0</TargetFSharpCoreVersion>
     <Name>Akomachi</Name>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,46 +34,43 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\Akomachi.XML</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup>
-    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
-  </PropertyGroup>
-  <Choose>
-    <When Condition="'$(VisualStudioVersion)' == '11.0'">
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <Import Project="$(FSharpTargetsPath)" />
-  <ItemGroup>
-    <Compile Include="Exceptions.fs" />
-    <Compile Include="Parser.fs" />
-    <Compile Include="Runtime.fs" />
-    <Compile Include="Sexp.fs" />
-    <Compile Include="Makimono.fs" />
-    <Compile Include="Akomachi.fs" />
-    <None Include="App.config" />
-  </ItemGroup>
   <ItemGroup>
     <Reference Include="FParsec">
-      <HintPath>..\Lib\FParsec.dll</HintPath>
+      <HintPath>..\..\Lib\FParsec.dll</HintPath>
     </Reference>
     <Reference Include="FParsecCS">
-      <HintPath>..\Lib\FParsecCS.dll</HintPath>
+      <HintPath>..\..\Lib\FParsecCS.dll</HintPath>
     </Reference>
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
+    <Reference Include="FSharp.Core">
+      <Name>FSharp.Core</Name>
+      <AssemblyName>FSharp.Core.dll</AssemblyName>
+      <HintPath>$(MSBuildExtensionsPath32)\..\Reference Assemblies\Microsoft\FSharp\.NETCore\$(TargetFSharpCoreVersion)\FSharp.Core.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Include="System.Core" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Akomachi\Exceptions.fs">
+      <Link>Exceptions.fs</Link>
+    </Compile>
+    <Compile Include="..\..\Akomachi\Parser.fs">
+      <Link>Parser.fs</Link>
+    </Compile>
+    <Compile Include="..\..\Akomachi\Runtime.fs">
+      <Link>Runtime.fs</Link>
+    </Compile>
+    <Compile Include="..\..\Akomachi\Sexp.fs">
+      <Link>Sexp.fs</Link>
+    </Compile>
+    <Compile Include="..\..\Akomachi\Makimono.fs">
+      <Link>Makimono.fs</Link>
+    </Compile>
+    <Compile Include="..\..\Akomachi\Akomachi.fs">
+      <Link>Akomachi.fs</Link>
+    </Compile>
+  </ItemGroup>
+  <PropertyGroup>
+    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">12</MinimumVisualStudioVersion>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.Portable.FSharp.Targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

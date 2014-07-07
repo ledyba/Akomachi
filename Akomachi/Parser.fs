@@ -53,7 +53,7 @@ module Parser =
     // License: Simplified BSD License. See accompanying documentation.
     let internal str s = pstring s
     let strLiteral =
-        let escape =  anyOf "\"\\/bfnrt"
+        let escape =  anyOf ("\"\\/bfnrt".ToCharArray())
                       |>> function
                           | 'b' -> "\b"
                           | 'f' -> "\u000C"
@@ -80,9 +80,9 @@ module Parser =
     let internal optsWithPreCheck = IdentifierOptions(
                                      isAsciiIdStart = isAsciiIdStart,
                                      isAsciiIdContinue = isAsciiIdContinue,
-                                     allowAllNonAsciiCharsInPreCheck = true,
-                                     normalization = System.Text.NormalizationForm.FormKC,
-                                     normalizeBeforeValidation = true)
+                                     allowAllNonAsciiCharsInPreCheck = true)///,
+                                     ///normalization = System.Text.NormalizationForm.FormKC,
+                                     ///normalizeBeforeValidation = true)
     let internal ident = (identifier optsWithPreCheck)
     let identLiteral = ident |>> AST.Ident
     let nullLiteral = stringReturn "null" AST.Null

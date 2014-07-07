@@ -2,6 +2,7 @@
 
 open Akomachi.Parser
 open Akomachi.Exceptions
+open System.Reflection
 
 module Runtime =
   (*******************************************************************)
@@ -140,8 +141,8 @@ module Runtime =
       else if t.Equals(typeof<int>)   then unbox<Value->'T> (box value2string)
       else if t.Equals(typeof<bool>)   then unbox<Value->'T> (box value2bool)
       else if t.Equals(typeof<unit>)   then unbox<Value->'T> (box (fun _ -> ()))
-      else if t.IsInstanceOfType(typeof<obj>) then unbox<Value->'T> (box value2nativeobj)
-      else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
+      else if typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then unbox<Value->'T> (box value2nativeobj)
+      else if t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
       else (raise (UnsupportedUnboxingException (t, "Unsupported")))
   let unboxDynamic (v:Value) (to_type:System.Type) : obj =
       let t = to_type
@@ -150,8 +151,8 @@ module Runtime =
       else if t.Equals(typeof<int>)   then (value2string v) :> obj
       else if t.Equals(typeof<bool>)   then (value2bool v) :> obj
       else if t.Equals(typeof<unit>)   then () :> obj
-      else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then v :> obj
-      else if  t.IsInstanceOfType(typeof<obj>) then (value2nativeobj v)
+      else if t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>) then v :> obj
+      else if  typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then (value2nativeobj v)
       else (raise (UnsupportedUnboxingException (t, "Unsupported")))
 
   let inline boxFun<'T> : 'T -> Value =
@@ -161,8 +162,8 @@ module Runtime =
       else if  t.Equals(typeof<bool>)   then (unbox<'T->Value> (box Bool))
       else if  t.Equals(typeof<string>) then (unbox<'T->Value> (box String))
       else if  t.Equals(typeof<AkObj>) then (unbox<'T->Value>  (box Obj))
-      else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
-      else if  t.IsInstanceOfType(typeof<obj>) then (unbox<'T->Value>  (box NativeObject))
+      else if  t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
+      else if  typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then (unbox<'T->Value>  (box NativeObject))
       else (raise (UnsupportedBoxingException (t, "Unsupported")))
   let rec boxDynamic (v:obj) : Value =
     if v = null then Null
@@ -173,8 +174,8 @@ module Runtime =
       else if  t.Equals(typeof<bool>)   then Bool (v :?> bool)
       else if  t.Equals(typeof<string>) then String (v :?> string)
       else if  t.Equals(typeof<AkObj>) then Obj  (v :?> AkObj)
-      else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)  then v :?> Value
-      else if  t.IsInstanceOfType(typeof<obj>) then NativeObject (v)
+      else if  t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>)  then v :?> Value
+      else if  typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then NativeObject (v)
       else (raise (UnsupportedBoxingException (t, "Unsupported")))
   let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
   (*******************************************************************)
@@ -182,7 +183,7 @@ module Runtime =
   (*******************************************************************)
   module Native =
       let invoke (ty:System.Type) (name:string) (self:Value) (args:Value list) =
-          let fn = ty.GetMethod name
+          let fn = (ty.GetTypeInfo()).GetDeclaredMethod name
           let ps = List.map (fun (x:System.Reflection.ParameterInfo) -> x.ParameterType) (Array.toList (fn.GetParameters()))
           if fn.IsStatic then
               let v = fn.Invoke(null, List.toArray (List.map (fun (x,y) -> unboxDynamic x y) (List.zip (self::args) ps)))
@@ -193,32 +194,35 @@ module Runtime =
                  | _ -> (raise (TypeMismatchException (self.GetType(), "You must supply Native Object to invoke Native function.")))
       let get spr name =
           let ty = spr.GetType()
-          if (ty.GetField name) <> null then
-              let field = ty.GetField name
+          let ti = ty.GetTypeInfo()
+          if (ti.GetDeclaredField name) <> null then
+              let field = ti.GetDeclaredField name
               let v = (field.GetValue(spr))
               boxDynamic v
-          else if (ty.GetProperty name) <> null then
-              let p = ty.GetProperty name
+          else if (ti.GetDeclaredProperty name) <> null then
+              let p = ti.GetDeclaredProperty name
               let v = p.GetValue(spr, null)
               boxDynamic v
-          else if (ty.GetMethod name) <> null then
+          else if (ti.GetDeclaredMethod name) <> null then
               NativeFunc (ty, name)
           else Null
       let set spr name v =
           let ty = spr.GetType()
-          if (ty.GetField name) <> null then
-              let field = ty.GetField name
+          let ti = ty.GetTypeInfo()
+          if (ti.GetDeclaredField name) <> null then
+              let field = ti.GetDeclaredField name
               field.SetValue(spr, (value2obj v));
               v
-          else if (ty.GetProperty name) <> null then
-              let p = ty.GetProperty name
+          else if (ti.GetDeclaredProperty name) <> null then
+              let p = ti.GetDeclaredProperty name
               p.SetValue(spr, (value2obj v), null)
               v
-          else if (ty.GetMethod name) <> null then
+          else if (ti.GetDeclaredMethod name) <> null then
               (raise (invalidOp "???"))
           else Null
       let save spr =
           let ty = spr.GetType()
-          let fn = ty.GetMethod "Save"
+          let ti = ty.GetTypeInfo()
+          let fn = ti.GetDeclaredMethod "Save"
           if not (fn.ReturnType.Equals(typeof<string>)) then raise (InvalidNativeObjectException (ty, "You need to Save method for saving")) else ()
           if fn.IsStatic then fn.Invoke(null, List.toArray [spr]) else fn.Invoke(spr, null)
