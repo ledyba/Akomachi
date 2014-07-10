@@ -77,8 +77,8 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Akomachi\Akomachi.fsproj">
-      <Name>Akomachi</Name>
+    <ProjectReference Include="..\AkomachiPortable\AkomachiPortable.fsproj">
+      <Name>AkomachiPortable</Name>
       <Project>{7089ce5e-5eab-4511-b0f6-0c6ccc80d1d2}</Project>
       <Private>True</Private>
     </ProjectReference>

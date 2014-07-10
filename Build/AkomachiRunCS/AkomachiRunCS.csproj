@@ -61,9 +61,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Akomachi\Akomachi.fsproj">
+    <ProjectReference Include="..\AkomachiPortable\AkomachiPortable.fsproj">
       <Project>{7089ce5e-5eab-4511-b0f6-0c6ccc80d1d2}</Project>
-      <Name>Akomachi</Name>
+      <Name>AkomachiPortable</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
