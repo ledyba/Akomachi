@@ -71,12 +71,16 @@ module Makimono =
                 let t = (lst .[1] :?> string )
                 let save = (lst .[2] :?> string)
                 let typ = System.Type.GetType(t)
+                #if PORTABLE
                 let ti = typ.GetTypeInfo()
                 let selector =
                   fun (x:ConstructorInfo) ->
                     let para = x.GetParameters()
                     x.IsPublic && para.Length = 1 && para.[0].ParameterType.Equals(typeof<string>)
-                let con = ti.DeclaredConstructors.Single( new System.Func<ConstructorInfo, bool>(selector) )
+                let con = ti.DeclaredConstructors.Single( new System.Func<ConstructorInfo, bool>(selector) )q
+                #else
+                let con = typ.GetConstructor [| typeof<string> |]
+                #endif
                 NativeObject (con.Invoke([|save|]))
             | "NativeFunction" ->
                 let typ = (System.Type.GetType(lst.[1] :?> string))

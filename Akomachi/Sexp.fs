@@ -60,7 +60,11 @@ module Sexp =
              | ParserResult.Failure (msg,err,us) -> ParseResult.Error (sprintf "Failed to parse: %s" msg)
     let internal encodeString (s:string) = s.Replace("\'", "\\\'").Replace("\b", "\\b").Replace("\f", "\\f").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t")
     let rec toSexp (ex:obj) =
+      #if PORTABLE
       let ty = if ex.GetType().GetTypeInfo().IsGenericType then ex.GetType().GetGenericTypeDefinition() else ex.GetType()
+      #else
+      let ty = if ex.GetType().IsGenericType then ex.GetType().GetGenericTypeDefinition() else ex.GetType()
+      #endif
       if      ty.Equals(typeof<int>)     then (string (ex :?> int))
       else if ty.Equals(typeof<float>)   then (string (ex :?> float))
       else if ty.Equals(typeof<bool>)    then (if (ex:?>bool) then "true" else "false")
