@@ -77,7 +77,7 @@ module Makimono =
                   fun (x:ConstructorInfo) ->
                     let para = x.GetParameters()
                     x.IsPublic && para.Length = 1 && para.[0].ParameterType.Equals(typeof<string>)
-                let con = ti.DeclaredConstructors.Single( new System.Func<ConstructorInfo, bool>(selector) )q
+                let con = ti.DeclaredConstructors.Single( new System.Func<ConstructorInfo, bool>(selector) )
                 #else
                 let con = typ.GetConstructor [| typeof<string> |]
                 #endif
