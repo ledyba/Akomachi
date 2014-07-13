@@ -141,8 +141,13 @@ module Runtime =
       else if t.Equals(typeof<int>)   then unbox<Value->'T> (box value2string)
       else if t.Equals(typeof<bool>)   then unbox<Value->'T> (box value2bool)
       else if t.Equals(typeof<unit>)   then unbox<Value->'T> (box (fun _ -> ()))
+      #if PORTABLE
       else if typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then unbox<Value->'T> (box value2nativeobj)
       else if t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
+      #else
+      else if typeof<obj>.IsAssignableFrom(t) then unbox<Value->'T> (box value2nativeobj)
+      else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then unbox<Value->'T> (box id)
+      #endif
       else (raise (UnsupportedUnboxingException (t, "Unsupported")))
   let unboxDynamic (v:Value) (to_type:System.Type) : obj =
       let t = to_type
@@ -151,8 +156,13 @@ module Runtime =
       else if t.Equals(typeof<int>)   then (value2string v) :> obj
       else if t.Equals(typeof<bool>)   then (value2bool v) :> obj
       else if t.Equals(typeof<unit>)   then () :> obj
+      #if PORTABLE
       else if t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>) then v :> obj
       else if  typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then (value2nativeobj v)
+      #else
+      else if t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>) then v :> obj
+      else if  typeof<obj>.IsAssignableFrom(t) then (value2nativeobj v)
+      #endif
       else (raise (UnsupportedUnboxingException (t, "Unsupported")))
 
   let inline boxFun<'T> : 'T -> Value =
@@ -162,8 +172,13 @@ module Runtime =
       else if  t.Equals(typeof<bool>)   then (unbox<'T->Value> (box Bool))
       else if  t.Equals(typeof<string>) then (unbox<'T->Value> (box String))
       else if  t.Equals(typeof<AkObj>) then (unbox<'T->Value>  (box Obj))
+      #if PORTABLE
       else if  t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
       else if  typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then (unbox<'T->Value>  (box NativeObject))
+      #else
+      else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)   then unbox<'T->Value> (box id)
+      else if  typeof<obj>.IsAssignableFrom(t) then (unbox<'T->Value>  (box NativeObject))
+      #endif
       else (raise (UnsupportedBoxingException (t, "Unsupported")))
   let rec boxDynamic (v:obj) : Value =
     if v = null then Null
@@ -174,8 +189,13 @@ module Runtime =
       else if  t.Equals(typeof<bool>)   then Bool (v :?> bool)
       else if  t.Equals(typeof<string>) then String (v :?> string)
       else if  t.Equals(typeof<AkObj>) then Obj  (v :?> AkObj)
+      #if PORTABLE
       else if  t.Equals(typeof<Value>) || t.GetTypeInfo().IsSubclassOf(typeof<Value>)  then v :?> Value
       else if  typeof<obj>.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) then NativeObject (v)
+      #else
+      else if  t.Equals(typeof<Value>) || t.IsSubclassOf(typeof<Value>)  then v :?> Value
+      else if  typeof<obj>.IsAssignableFrom(t) then NativeObject (v)
+      #endif
       else (raise (UnsupportedBoxingException (t, "Unsupported")))
   let list2obj (lst : Value list) = AkObj ( dict (List.zip (List.map string [0..(List.length lst)-1]) lst) )
   (*******************************************************************)
@@ -183,7 +203,11 @@ module Runtime =
   (*******************************************************************)
   module Native =
       let invoke (ty:System.Type) (name:string) (self:Value) (args:Value list) =
+          #if PORTABLE
           let fn = (ty.GetTypeInfo()).GetDeclaredMethod name
+          #else
+          let fn = (ty).GetMethod name
+          #endif
           let ps = List.map (fun (x:System.Reflection.ParameterInfo) -> x.ParameterType) (Array.toList (fn.GetParameters()))
           if fn.IsStatic then
               let v = fn.Invoke(null, List.toArray (List.map (fun (x,y) -> unboxDynamic x y) (List.zip (self::args) ps)))
@@ -193,6 +217,7 @@ module Runtime =
                  | NativeObject sobj -> boxDynamic (fn.Invoke(sobj, List.toArray (List.map (value2obj) args)))
                  | _ -> (raise (TypeMismatchException (self.GetType(), "You must supply Native Object to invoke Native function.")))
       let get spr name =
+          #if PORTABLE
           let ty = spr.GetType()
           let ti = ty.GetTypeInfo()
           if (ti.GetDeclaredField name) <> null then
@@ -206,7 +231,23 @@ module Runtime =
           else if (ti.GetDeclaredMethod name) <> null then
               NativeFunc (ty, name)
           else Null
+          #else
+          let ti = spr.GetType()
+          let ty = ti
+          if (ti.GetField name) <> null then
+              let field = ti.GetField name
+              let v = (field.GetValue(spr))
+              boxDynamic v
+          else if (ti.GetProperty name) <> null then
+              let p = ti.GetProperty name
+              let v = p.GetValue(spr, null)
+              boxDynamic v
+          else if (ti.GetMethod name) <> null then
+              NativeFunc (ty, name)
+          else Null
+          #endif
       let set spr name v =
+          #if PORTABLE
           let ty = spr.GetType()
           let ti = ty.GetTypeInfo()
           if (ti.GetDeclaredField name) <> null then
@@ -220,9 +261,32 @@ module Runtime =
           else if (ti.GetDeclaredMethod name) <> null then
               (raise (invalidOp "???"))
           else Null
+          #else
+          let ty = spr.GetType()
+          let ti = ty
+          if (ti.GetField name) <> null then
+              let field = ti.GetField name
+              field.SetValue(spr, (value2obj v));
+              v
+          else if (ti.GetProperty name) <> null then
+              let p = ti.GetProperty name
+              p.SetValue(spr, (value2obj v), null)
+              v
+          else if (ti.GetMethod name) <> null then
+              (raise (invalidOp "???"))
+          else Null
+          #endif
       let save spr =
+          #if PORTABLE
           let ty = spr.GetType()
           let ti = ty.GetTypeInfo()
           let fn = ti.GetDeclaredMethod "Save"
           if not (fn.ReturnType.Equals(typeof<string>)) then raise (InvalidNativeObjectException (ty, "You need to Save method for saving")) else ()
           if fn.IsStatic then fn.Invoke(null, List.toArray [spr]) else fn.Invoke(spr, null)
+          #else
+          let ty = spr.GetType()
+          let ti = ty
+          let fn = ti.GetMethod "Save"
+          if not (fn.ReturnType.Equals(typeof<string>)) then raise (InvalidNativeObjectException (ty, "You need to Save method for saving")) else ()
+          if fn.IsStatic then fn.Invoke(null, List.toArray [spr]) else fn.Invoke(spr, null)
+          #endif
