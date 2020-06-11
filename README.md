@@ -88,43 +88,43 @@ fn(1,2,3); // --> null このあたりも同じ
 ````C#
 namespace AkomachiRunCS
 {
-    class Sys
+  class Sys
+  {
+    public void println(String src)
     {
-        public void println(String src)
-        {
-            Console.WriteLine(src);
-        }
-        public void print(String src)
-        {
-            Console.Write(src);
-        }
+      Console.WriteLine(src);
     }
-    class Program
+    public void print(String src)
     {
-        static void Main(string[] args)
-        {
-            Akomachi.Akomachi ako = new Akomachi.Akomachi();
-            ako.setGlobalObject("System", (Object)new Sys());
-            if(args.Length > 0) {
-                System.IO.StreamReader stream = System.IO.File.OpenText (args[0]);
-                String src = stream.ReadToEnd();
-                Akomachi.Parser.Result parseResult = ako.parse(src);
-                if( parseResult.IsSuccess ) {
-                    Akomachi.Parser.Result.Success succ = (Akomachi.Parser.Result.Success)parseResult;
-                    ako.dance(succ.Item);
-                    // or
-                    // Akomachi.Parser ast = ako.parseOrThrow(src);
-                    // ako.dance(ast);
-                    // この時、パースエラーの時は例外を投げます。
-                }else{
-                    Akomachi.Parser.Result.Error err = (Akomachi.Parser.Result.Error)parseResult;
-                    Console.WriteLine("Failed to parse: {0}", err.Item);
-                }
-            }else{
-                Console.WriteLine("Usage: {0} <src>" , System.AppDomain.CurrentDomain.FriendlyName);
-            }
-        }
+      Console.Write(src);
     }
+  }
+  class Program
+  {
+    static void Main(string[] args)
+    {
+      Akomachi.Akomachi ako = new Akomachi.Akomachi();
+      ako.setGlobalObject("System", (Object)new Sys());
+      if(args.Length > 0) {
+        System.IO.StreamReader stream = System.IO.File.OpenText (args[0]);
+        String src = stream.ReadToEnd();
+        Akomachi.Parser.Result parseResult = ako.parse(src);
+        if( parseResult.IsSuccess ) {
+          Akomachi.Parser.Result.Success succ = (Akomachi.Parser.Result.Success)parseResult;
+          ako.dance(succ.Item);
+          // or
+          // Akomachi.Parser ast = ako.parseOrThrow(src);
+          // ako.dance(ast);
+          // この時、パースエラーの時は例外を投げます。
+        }else{
+          Akomachi.Parser.Result.Error err = (Akomachi.Parser.Result.Error)parseResult;
+          Console.WriteLine("Failed to parse: {0}", err.Item);
+        }
+      }else{
+        Console.WriteLine("Usage: {0} <src>" , System.AppDomain.CurrentDomain.FriendlyName);
+      }
+    }
+  }
 }
 ````
 
@@ -136,26 +136,26 @@ namespace AkomachiRunCS
 open Akomachi
 
 type System()=
-    member self.println(s:string) = printfn "%s" s
-    member self.print(s:string) = printf "%s" s
+  member self.println(s:string) = printfn "%s" s
+  member self.print(s:string) = printf "%s" s
 
 [<EntryPoint>]
 let main argv = 
-    let akomachi = Akomachi.Akomachi();
-    akomachi.setGlobalObject("System", new System() :> obj)
-    if argv.Length > 0 then
-        let stream = System.IO.File.OpenText (argv.[0])
-        let src = stream.ReadToEnd()
-        match akomachi.parse src with
-            | Akomachi.Parser.Success ast ->
-                let v = akomachi.dance ast
-                0
-            | Akomachi.Parser.Error err ->
-                printfn "Failed to parse: %s" err
-                -1
-    else
-        printfn "Usage: %s <src>"  System.AppDomain.CurrentDomain.FriendlyName
+  let akomachi = Akomachi.Akomachi();
+  akomachi.setGlobalObject("System", new System() :> obj)
+  if argv.Length > 0 then
+    let stream = System.IO.File.OpenText (argv.[0])
+    let src = stream.ReadToEnd()
+    match akomachi.parse src with
+      | Akomachi.Parser.Success ast ->
+        let v = akomachi.dance ast
         0
+      | Akomachi.Parser.Error err ->
+        printfn "Failed to parse: %s" err
+        -1
+  else
+    printfn "Usage: %s <src>"  System.AppDomain.CurrentDomain.FriendlyName
+    0
 ````
 
 ### セーブの仕方
