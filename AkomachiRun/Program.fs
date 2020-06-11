@@ -4,25 +4,25 @@
 open Akomachi
 
 type System()=
-    member self.println(s:string) = printfn "%s" s
-    member self.print(s:string) = printf "%s" s
-    member self.Save() = ""
+  member self.println(s:string) = printfn "%s" s
+  member self.print(s:string) = printf "%s" s
+  member self.Save() = ""
 
 [<EntryPoint>]
 let main argv = 
-    let akomachi = Akomachi.Akomachi();
-    akomachi.setGlobalObject("System", new System() :> obj)
-    if argv.Length > 0 then
-        let stream = System.IO.File.OpenText (argv.[0])
-        let src = stream.ReadToEnd()
-        match akomachi.parse src with
-            | Akomachi.Parser.Success ast ->
-                let v = akomachi.dance ast
-                0
-            | Akomachi.Parser.Error err ->
-                printfn "Failed to parse: %s" err
-                -1
-    else
-        printfn "Usage: %s <src>"  System.AppDomain.CurrentDomain.FriendlyName
+  let akomachi = Akomachi.Akomachi();
+  akomachi.setGlobalObject("System", new System() :> obj)
+  if argv.Length > 0 then
+    let stream = System.IO.File.OpenText (argv.[0])
+    let src = stream.ReadToEnd()
+    match akomachi.parse src with
+      | Akomachi.Parser.Success ast ->
+        let v = akomachi.dance ast
         0
+      | Akomachi.Parser.Error err ->
+        printfn "Failed to parse: %s" err
+        -1
+  else
+    printfn "Usage: %s <src>"  System.AppDomain.CurrentDomain.FriendlyName
+    0
 
