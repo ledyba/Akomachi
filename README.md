@@ -10,10 +10,10 @@ Very Simple .NET Language for embed
 
 ## 主な特徴、もといウリ
 
- * 処理系のセーブデータを保存して、復帰できる
- * （エンジンの）ソースコードが短い
- * メモリ使用量が少ない
- * 遅くても仕方ない
+ - 処理系のセーブデータを保存して、復帰できる
+ - （エンジンの）ソースコードが短い
+ - メモリ使用量が少ない
+ - 遅くても仕方ない
 
 ## 文法 / Syntax
 
@@ -160,7 +160,7 @@ let main argv =
 
 ### セーブの仕方
 
-#### C&#35
+#### C#
 
 ````C#
 // セーブデータはStringです。
@@ -172,7 +172,7 @@ Akomachi.Akomachi new_ako = new Akomachi.Akomachi(savedata);
 
 ### オブジェクトの登録
 
-#### C&#35
+#### C#
 
 ````F#
 ako.setGlobalObject("IntValue", 1);
